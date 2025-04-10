@@ -1,6 +1,6 @@
 name: Dapps
 
-on:[ push ]
+on: [push]
 
 jobs:
   build:
