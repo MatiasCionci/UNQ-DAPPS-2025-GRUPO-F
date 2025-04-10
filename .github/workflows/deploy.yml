@@ -1,0 +1,15 @@
+name: Deploy a Render al hacer push
+
+on:
+  push:
+    branches:
+      - main  # Cambiá si usás otra rama
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Llamar al Deploy Hook de Render
+        run: |
+          curl -X POST "https://api.render.com/deploy/srv-cvrjd5ggjchc73bb5vtg?key=2ECYUubyzcQ"
