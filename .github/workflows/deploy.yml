@@ -1,9 +1,13 @@
-name: Deploy a Render al hacer push
+name: Deploy to Render
 
 on:
   push:
     branches:
-      - main  # Cambiá si usás otra rama
+      - main
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
 
 jobs:
   deploy:
