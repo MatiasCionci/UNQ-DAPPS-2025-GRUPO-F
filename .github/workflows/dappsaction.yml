@@ -12,7 +12,7 @@ jobs:
        contents:write
      steps:
         - name: Checkout repo
-        - uses: actions/checkout@v4
+          uses: actions/checkout@v4
 
         - name: Setup Java
           uses: actions/setup-java@v4
@@ -20,8 +20,9 @@ jobs:
             distribution: 'temurin' # See 'Supported distributions' for available options
             java-version: '21'
             
-        - name: Run example 
-          run: java HelloWorldApp.java
+             
+      # - name: Run example 
+      #   run: java HelloWorldApp.java
 
         - name: Commit and Push changes  
           uses: stefanzweifel/git-auto-commit-action@v5
