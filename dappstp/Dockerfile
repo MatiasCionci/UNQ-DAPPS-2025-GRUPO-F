@@ -1,14 +1,23 @@
 # Etapa de construcción con Maven y Java 21
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 
-# Creamos una carpeta de trabajo
+# Creamos carpeta de trabajo
 WORKDIR /app
 
-# Copiamos el contenido del proyecto
-COPY . .
+# Copiamos solo lo necesario para cachear dependencias primero
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
+
+# Descargamos dependencias sin compilar
+RUN ./mvnw dependency:go-offline
+
+# Ahora copiamos el resto del proyecto
+COPY src ./src
 
 # Ejecutamos el build con Maven (sin tests)
-RUN mvn clean package -DskipTests
+RUN ./mvnw clean package -DskipTests
 
 # Etapa final con solo Java para ejecutar la app
 FROM eclipse-temurin:21-jdk
