@@ -35,9 +35,6 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Navigate to backend directory (if needed)
-        run: cd backend # Esto es solo si tu `pom.xml` está dentro de una subcarpeta llamada 'backend'
-
       - name: Build and analyze
         working-directory: ./dappstp
         env:
