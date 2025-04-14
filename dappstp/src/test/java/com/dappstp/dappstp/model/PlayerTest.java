@@ -7,7 +7,7 @@ public class PlayerTest {
     
     @Test
     void testPlayerModel() {
-        Player player = new Player("Nicolas", 2, 1, 3, 2.0);
+        Player player = new Player("Nicolas", 2, 1, 3, 2.0, "Racing");
         Assertions.assertEquals("Nicolas", player.getName());
         Assertions.assertEquals(2, player.getMatchesPlayed());
         Assertions.assertEquals(1, player.getGoals());
@@ -17,7 +17,7 @@ public class PlayerTest {
 
     @Test
     void testEmptyPlayer() {
-        Player player = new Player("Matias", 3, 2, 1, 3.0);
+        Player player = new Player("Matias", 3, 2, 1, 3.0, "Boca");
         Assertions.assertNotNull(player.getName());
         Assertions.assertNotEquals(0, player.getMatchesPlayed());
         Assertions.assertNotEquals(0, player.getGoals());
@@ -27,7 +27,7 @@ public class PlayerTest {
 
     @Test
     void testNegativeGoalsPlayer() {
-        Player player = new Player("Nicolas", 2, -1, 3, 2.0);
+        Player player = new Player("Nicolas", 2, -1, 3, 2.0, "Quilmes");
         Assertions.assertEquals("Nicolas", player.getName());
         Assertions.assertEquals(2, player.getMatchesPlayed());
         Assertions.assertNotEquals(2, player.getGoals()); // Assuming goals cannot be negative
