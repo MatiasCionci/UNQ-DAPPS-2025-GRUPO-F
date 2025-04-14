@@ -39,6 +39,7 @@ jobs:
         run: cd backend # Esto es solo si tu `pom.xml` está dentro de una subcarpeta llamada 'backend'
 
       - name: Build and analyze
+        working-directory: ./dappstp
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
