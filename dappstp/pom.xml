@@ -38,10 +38,10 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
-    <groupId>com.h2database</groupId>
-    <artifactId>h2</artifactId>
-    <scope>runtime</scope>
-</dependency>
+    		<groupId>com.h2database</groupId>
+    		<artifactId>h2</artifactId>
+    		<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -54,7 +54,6 @@
     		<groupId>org.postgresql</groupId>
     		<artifactId>postgresql</artifactId>
 			</dependency>
-
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
@@ -95,69 +94,36 @@
     		<artifactId>selenium-java</artifactId>
     		<version>4.12.1</version>
 		</dependency>
-		<dependency>
-        	<groupId>org.springframework.boot</groupId>
-        	<artifactId>spring-boot-starter-security</artifactId>
-    	</dependency>
-		<dependency>
+		  <!-- Spring Security -->
+  		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-security</artifactId>
+  		</dependency>
+
+  		<!-- JWT (io.jsonwebtoken) -->
+  		<dependency>
     		<groupId>io.jsonwebtoken</groupId>
     		<artifactId>jjwt-api</artifactId>
     		<version>0.11.5</version>
-		</dependency>
-		<dependency>
+  		</dependency>
+  		<dependency>
     		<groupId>io.jsonwebtoken</groupId>
     		<artifactId>jjwt-impl</artifactId>
-    		<version>0.11.5</version>
+   	 		<version>0.11.5</version>
     		<scope>runtime</scope>
-		</dependency>
-		<dependency>
+  		</dependency>
+  		<dependency>
     		<groupId>io.jsonwebtoken</groupId>
-    		<artifactId>jjwt-jackson</artifactId>
+    		<artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson if you're using Gson -->
     		<version>0.11.5</version>
     		<scope>runtime</scope>
-		</dependency>
-		<dependency>
-    		<groupId>org.mockito</groupId>
-    		<artifactId>mockito-inline</artifactId>
-    		<version>5.2.0</version> <!-- o la última disponible -->
-    		<scope>test</scope>
-		</dependency>
-		<dependency>
-   			<groupId>org.springframework</groupId>
-    		<artifactId>spring-context</artifactId>
-    		<version>5.3.29</version> <!-- Use the version compatible with your project -->
-		</dependency>
-</dependencies>
-		  <!-- Spring Security -->
-  <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-security</artifactId>
-  </dependency>
+  		</dependency>
 
-  <!-- JWT (io.jsonwebtoken) -->
-  <dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-api</artifactId>
-    <version>0.11.5</version>
-  </dependency>
-  <dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-impl</artifactId>
-    <version>0.11.5</version>
-    <scope>runtime</scope>
-  </dependency>
-  <dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson if you're using Gson -->
-    <version>0.11.5</version>
-    <scope>runtime</scope>
-  </dependency>
-
-  <!-- Opcionalmente para encriptar contraseñas -->
-  <dependency>
-    <groupId>org.springframework.security</groupId>
-    <artifactId>spring-security-crypto</artifactId>
-  </dependency>
+  		<!-- Opcionalmente para encriptar contraseÃ±as -->
+  		<dependency>
+    		<groupId>org.springframework.security</groupId>
+    		<artifactId>spring-security-crypto</artifactId>
+  		</dependency>
 
 	</dependencies>
 
@@ -193,3 +159,4 @@
 	</build>
 
 </project>
+
