@@ -1,18 +1,22 @@
 package com.dappstp.dappstp.model;
 
 import java.util.UUID;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-public class User {
+@Table(name = "app_user")
+public class User implements UserDetails{
     
     @Id 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private UUID id;
 
@@ -66,6 +70,36 @@ public class User {
     
     public void setApiKey(String apiKey) { 
         this.apiKey = apiKey; 
+    }
+
+    @Override
+    public String getUsername() {
+        return email;  // Usamos el email como el nombre de usuario
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.emptyList();  // Aquí puedes añadir roles si los tienes, por ahora devolvemos una lista vacía
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;  // Por simplicidad, asumimos que la cuenta no ha expirado
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;  // Por simplicidad, asumimos que la cuenta no está bloqueada
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;  // Por simplicidad, asumimos que las credenciales no han expirado
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;  // Por simplicidad, asumimos que la cuenta está habilitada
     }
 }
 

@@ -2,7 +2,7 @@ package com.dappstp.dappstp.service.impl;
 
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.dappstp.dappstp.model.User;
@@ -12,7 +12,7 @@ import com.dappstp.dappstp.service.UserService;
 @Service
 public class UserServiceImpl implements UserService{
     
-    @Autowired
+
     private UserRepository userRepository;  // Inyección del repositorio
 
     public UserServiceImpl(UserRepository userRepository) {
@@ -34,5 +34,15 @@ public class UserServiceImpl implements UserService{
     @Override
     public boolean validateApiKey(String apiKey) {
         return userRepository.findByApiKey(apiKey) != null;  // Verifica si existe un usuario con esa apiKey
+    }
+
+    @Override
+    public User loadUserByUsername(String email) throws UsernameNotFoundException {
+    // Busca el usuario por su email en la base de datos
+        User user = userRepository.findByEmail(email); // Suponiendo que tienes un campo 'email' en tu modelo UserModel
+        if (user == null) {
+            throw new UsernameNotFoundException("Usuario no encontrado con el email: " + email);
+        }
+        return user; 
     }
 }

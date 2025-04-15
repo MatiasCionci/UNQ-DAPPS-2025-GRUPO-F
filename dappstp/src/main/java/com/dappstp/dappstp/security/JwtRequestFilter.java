@@ -12,6 +12,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.dappstp.dappstp.service.impl.UserServiceImpl;
+
 import org.springframework.lang.NonNull;
 
 import java.io.IOException;
@@ -23,7 +26,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private JwtToken jwtToken;
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UserDetailsServiceImpl userDetailsService; 
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
