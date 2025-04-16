@@ -12,10 +12,18 @@ public class ScrapingController {
 @Autowired
     private PlayerProfileScrapingService scrapingService;
 
+    @GetMapping("/")
+    public String index() {
+        return "Hola, bienvenido a DappSTP!";
+    }
     @GetMapping("/scrape")
     public String runScraping() {
         scrapingService.scrapeAndSavePlayer();
         return "Listo";
     }
+    @GetMapping("/hello")
+public String hello() {
+    return "Hola desde el backend!";
+}
 }
 

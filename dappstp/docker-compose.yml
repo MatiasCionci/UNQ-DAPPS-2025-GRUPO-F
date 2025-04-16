@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15
+    container_name: dappstp-db
+    environment:
+      POSTGRES_DB: dappstp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5233:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -8,5 +21,18 @@ services:
     container_name: dappstp-app
     ports:
       - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: dappstp
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      - postgres
     restart: unless-stopped
+
+volumes:
+  db_data:
+   
 
