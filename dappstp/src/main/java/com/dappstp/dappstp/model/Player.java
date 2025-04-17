@@ -7,15 +7,14 @@ public class Player {
     private int goals;
     private int assists;
     private double rating;
-    private String teamName;
-
-    public Player(String name, int matchesPlayed, int goals, int assists, double rating, String teamName) {
+   
+    public Player(String name, int matchesPlayed, int goals, int assists, double rating) {
         this.name = name;
         this.matchesPlayed = matchesPlayed;
         this.goals = goals;
         this.assists = assists;
         this.rating = rating;
-        this.teamName = teamName;
+       
     }
 
     public String getName() { 
@@ -38,9 +37,7 @@ public class Player {
         return rating; 
     }
 
-    public String getTeamName() {
-        return teamName; 
-    }
+
 
     public void setName(String name) { 
         this.name = name; 
@@ -62,7 +59,5 @@ public class Player {
         this.rating = rating; 
     }
 
-    public void setTeamName(String teamName) { 
-        this.teamName = teamName; 
-    }
+
 }

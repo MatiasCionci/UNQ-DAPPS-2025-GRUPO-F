@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.dappstp.dappstp.service.impl.UserServiceImpl;
+
 
 import org.springframework.lang.NonNull;
 
@@ -28,6 +28,17 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsServiceImpl userDetailsService; 
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        // estos paths NO pasan por el filtro
+        return path.equals("/") ||
+               path.equals("/hello") ||
+               path.startsWith("/players")  ||     
+               path.startsWith("/players/")  ||    // <-- permitimos /players sin JWT
+               path.startsWith("/auth/") ||
+               path.startsWith("/public/");
+    }
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,

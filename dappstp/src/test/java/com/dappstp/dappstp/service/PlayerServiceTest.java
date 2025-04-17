@@ -19,22 +19,6 @@ public class PlayerServiceTest {
         playerService = new PlayerServiceImpl();
     }
 
-    @Test
-    void shouldReturnPlayersFromGivenTeam() {
 
-        String teamName = "Barcelona";
-        List<Player> result = playerService.getPlayersByTeam(teamName);
 
-        assertFalse(result.isEmpty());
-        assertTrue(result.stream().allMatch(player -> teamName.equals(player.getTeamName())));
-    }
-
-    @Test
-    void shouldReturnEmptyListIfNoPlayersFromTeam() {
-
-        String teamName = "EquipoInexistente";
-        List<Player> result = playerService.getPlayersByTeam(teamName);
-
-        assertTrue(result.isEmpty());
-    }
 }
