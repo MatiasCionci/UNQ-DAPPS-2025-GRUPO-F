@@ -10,9 +10,9 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-// ***** Importación necesaria para Select *****
+// ***** AÑADIR ESTA IMPORTACIÓN *****
 import org.openqa.selenium.support.ui.Select;
-// ******************************************
+// ***********************************
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -114,25 +114,17 @@ public class ScraperServicePlayers {
             // ***** NUEVO: SELECCIONAR 'LaLiga' EN EL DESPLEGABLE *****
             try {
                 log.info("Intentando seleccionar 'LaLiga' en el desplegable de torneos...");
-                // Usar el selector CSS basado en el atributo data-backbone...
                 By tournamentDropdownSelector = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
                 WebElement dropdownElement = wait.until(ExpectedConditions.elementToBeClickable(tournamentDropdownSelector));
-
                 Select tournamentSelect = new Select(dropdownElement);
-                // Seleccionar por el texto visible exacto "LaLiga"
                 tournamentSelect.selectByVisibleText("LaLiga");
-
                 log.info("'LaLiga' seleccionada. Esperando un poco a que la página se actualice...");
-                // Pausa para permitir que el JavaScript de la página recargue la tabla
                 try { Thread.sleep(3000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-
             } catch (TimeoutException | NoSuchElementException e) {
                 log.error("Error: No se pudo encontrar o interactuar con el desplegable de torneos 'LaLiga'. El scraping probablemente fallará.", e);
-                // Lanzar excepción porque sin esto, la tabla no será la correcta
                 throw new RuntimeException("No se pudo seleccionar el torneo 'LaLiga'", e);
             } catch (Exception e) {
                  log.error("Error inesperado al seleccionar 'LaLiga': {}", e.getMessage(), e);
-                 // Lanzar excepción
                  throw new RuntimeException("Error inesperado al seleccionar 'LaLiga'", e);
             }
             // ***** FIN DEL BLOQUE AÑADIDO *****
@@ -140,17 +132,16 @@ public class ScraperServicePlayers {
 
             // 4. Extraer tabla (esperar a que sea visible)
             log.debug("Esperando la tabla de jugadores (después de seleccionar LaLiga)...");
-            // Asegúrate que este ID sigue siendo correcto después de seleccionar LaLiga
             WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("player-table-statistics-body")));
             log.debug("Tabla encontrada. Extrayendo filas...");
             List<WebElement> rows = table.findElements(By.tagName("tr"));
             log.info("Encontradas {} filas en la tabla.", rows.size());
 
-            // Procesar las filas
+            // (Código para procesar las filas...)
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 15) { // Verifica si 15 es el número correcto de columnas
+                if (cols.size() < 15) {
                     log.trace("Fila omitida, columnas insuficientes: {}", cols.size());
                     continue;
                 }
@@ -167,7 +158,6 @@ public class ScraperServicePlayers {
                     name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
                     log.trace("Nombre obtenido por fallback de texto directo: {}", name);
                 }
-                // Verifica que estos índices (4, 6, 7, 14) sean correctos para la tabla de LaLiga
                 String matches = cols.get(4).getText().trim();
                 int goals    = parseIntSafe(cols.get(6).getText());
                 int assists  = parseIntSafe(cols.get(7).getText());
@@ -188,7 +178,6 @@ public class ScraperServicePlayers {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else {
-                // Esto podría pasar si la tabla está vacía incluso después de seleccionar LaLiga
                 log.warn("⚠️ No se procesaron jugadores de la tabla (¿tabla vacía?).");
             }
         } catch (TimeoutException e) {
@@ -197,7 +186,6 @@ public class ScraperServicePlayers {
              // *****************************************************************
         }
         catch (Exception e) {
-            // Captura cualquier otra excepción, incluyendo las RuntimeException de la selección de liga
             log.error("Error general en scraping: ", e);
         } finally {
             if (driver != null) {
@@ -210,7 +198,7 @@ public class ScraperServicePlayers {
         return players;
     }
 
-    // Métodos helper parseIntSafe y parseDoubleSafe
+    // (Métodos parseIntSafe y parseDoubleSafe sin cambios...)
     private int parseIntSafe(String txt) {
         if (txt==null||txt.isBlank()||txt.equals("-")) return 0;
         try {
