@@ -19,6 +19,16 @@ import com.dappstp.dappstp.model.PlayerBarcelona;
 import com.dappstp.dappstp.service.Scraping.PlayerProfileScrapingService;
 import com.dappstp.dappstp.service.Scraping.ScraperServicePlayers;
 
+import org.springframework.web.bind.annotation.PathVariable; // Para leer el nombre del equipo de la URL
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter; // Para describir el parámetro en Swagger
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
 @RestController
 @RequestMapping("/api") // Ruta base para todos los endpoints de esta API
 public class ScrapingController {
