@@ -10,9 +10,9 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-// ***** AÑADIR ESTA IMPORTACIÓN *****
+// ***** Importación necesaria para Select *****
 import org.openqa.selenium.support.ui.Select;
-// ***********************************
+// ******************************************
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,10 +54,10 @@ public class ScraperServicePlayers {
             driver = new ChromeDriver(options);
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
 
-            // ***** CAMBIO 1: Definir duración y usarla *****
-            Duration waitTimeoutDuration = Duration.ofSeconds(30); // O el valor que prefieras (ej. 45)
+            // ***** CORRECCIÓN 1: Definir duración y usarla *****
+            Duration waitTimeoutDuration = Duration.ofSeconds(30); // Puedes ajustar este valor si es necesario (ej. 45)
             WebDriverWait wait = new WebDriverWait(driver, waitTimeoutDuration);
-            // **********************************************
+            // *************************************************
 
             // 1. Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
@@ -74,9 +74,9 @@ public class ScraperServicePlayers {
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
                 log.debug("SweetAlert cerrado.");
             } catch (TimeoutException | NoSuchElementException e) {
-                // ***** CAMBIO 2: Usar variable de duración en log *****
+                // ***** CORRECCIÓN 2: Usar variable de duración en log *****
                 log.debug("SweetAlert no encontrado o no visible en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
-                // ****************************************************
+                // *******************************************************
             } catch (Exception e) {
                 log.warn("Excepción inesperada al cerrar SweetAlert: {}", e.getMessage());
             }
@@ -99,9 +99,9 @@ public class ScraperServicePlayers {
                 log.debug("Banner de cookies cerrado.");
                 try { Thread.sleep(1000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             } catch (TimeoutException | NoSuchElementException e) {
-                // ***** CAMBIO 3: Usar variable de duración en log *****
+                // ***** CORRECCIÓN 3: Usar variable de duración en log *****
                 log.debug("Iframe o botón de cookies no encontrado en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
-                // ****************************************************
+                // *******************************************************
             } catch (Exception e) {
                 log.warn("Excepción inesperada al cerrar cookies: {}", e.getMessage());
             }
@@ -114,17 +114,25 @@ public class ScraperServicePlayers {
             // ***** NUEVO: SELECCIONAR 'LaLiga' EN EL DESPLEGABLE *****
             try {
                 log.info("Intentando seleccionar 'LaLiga' en el desplegable de torneos...");
+                // Usar el selector CSS basado en el atributo data-backbone...
                 By tournamentDropdownSelector = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
                 WebElement dropdownElement = wait.until(ExpectedConditions.elementToBeClickable(tournamentDropdownSelector));
+
                 Select tournamentSelect = new Select(dropdownElement);
+                // Seleccionar por el texto visible exacto "LaLiga"
                 tournamentSelect.selectByVisibleText("LaLiga");
+
                 log.info("'LaLiga' seleccionada. Esperando un poco a que la página se actualice...");
+                // Pausa para permitir que el JavaScript de la página recargue la tabla
                 try { Thread.sleep(3000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+
             } catch (TimeoutException | NoSuchElementException e) {
                 log.error("Error: No se pudo encontrar o interactuar con el desplegable de torneos 'LaLiga'. El scraping probablemente fallará.", e);
+                // Lanzar excepción porque sin esto, la tabla no será la correcta
                 throw new RuntimeException("No se pudo seleccionar el torneo 'LaLiga'", e);
             } catch (Exception e) {
                  log.error("Error inesperado al seleccionar 'LaLiga': {}", e.getMessage(), e);
+                 // Lanzar excepción
                  throw new RuntimeException("Error inesperado al seleccionar 'LaLiga'", e);
             }
             // ***** FIN DEL BLOQUE AÑADIDO *****
@@ -132,16 +140,17 @@ public class ScraperServicePlayers {
 
             // 4. Extraer tabla (esperar a que sea visible)
             log.debug("Esperando la tabla de jugadores (después de seleccionar LaLiga)...");
+            // Asegúrate que este ID sigue siendo correcto después de seleccionar LaLiga
             WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("player-table-statistics-body")));
             log.debug("Tabla encontrada. Extrayendo filas...");
             List<WebElement> rows = table.findElements(By.tagName("tr"));
             log.info("Encontradas {} filas en la tabla.", rows.size());
 
-            // (Código para procesar las filas...)
+            // Procesar las filas
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 15) {
+                if (cols.size() < 15) { // Verifica si 15 es el número correcto de columnas
                     log.trace("Fila omitida, columnas insuficientes: {}", cols.size());
                     continue;
                 }
@@ -158,6 +167,7 @@ public class ScraperServicePlayers {
                     name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
                     log.trace("Nombre obtenido por fallback de texto directo: {}", name);
                 }
+                // Verifica que estos índices (4, 6, 7, 14) sean correctos para la tabla de LaLiga
                 String matches = cols.get(4).getText().trim();
                 int goals    = parseIntSafe(cols.get(6).getText());
                 int assists  = parseIntSafe(cols.get(7).getText());
@@ -178,14 +188,16 @@ public class ScraperServicePlayers {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else {
-                log.warn("⚠️ No se procesaron jugadores de la tabla.");
+                // Esto podría pasar si la tabla está vacía incluso después de seleccionar LaLiga
+                log.warn("⚠️ No se procesaron jugadores de la tabla (¿tabla vacía?).");
             }
         } catch (TimeoutException e) {
-             // ***** CAMBIO 4 (Opcional): Usar variable de duración en log *****
+             // ***** CORRECCIÓN 4 (Opcional): Usar variable de duración en log *****
              log.error("Timeout esperando un elemento específico (WebDriverWait con {}s): {}", waitTimeoutDuration.getSeconds(), e.getMessage());
-             // **************************************************************
+             // *****************************************************************
         }
         catch (Exception e) {
+            // Captura cualquier otra excepción, incluyendo las RuntimeException de la selección de liga
             log.error("Error general en scraping: ", e);
         } finally {
             if (driver != null) {
@@ -198,7 +210,7 @@ public class ScraperServicePlayers {
         return players;
     }
 
-    // (Métodos parseIntSafe y parseDoubleSafe sin cambios...)
+    // Métodos helper parseIntSafe y parseDoubleSafe
     private int parseIntSafe(String txt) {
         if (txt==null||txt.isBlank()||txt.equals("-")) return 0;
         try {
