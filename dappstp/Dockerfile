@@ -1,35 +1,57 @@
-# Etapa de construcción con Maven y Java 21 
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# Etapa de build
+FROM eclipse-temurin:21-jdk AS builder
 
-# Creamos carpeta de trabajo
 WORKDIR /app
 
-# Copiamos solo lo necesario para cachear dependencias primero
-COPY pom.xml .  
-COPY .mvn .mvn  
-COPY mvnw .  
-COPY mvnw.cmd .
+# Copiar archivos necesarios para Maven
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
-# Le damos permisos de ejecución al script mvnw y descargamos dependencias sin compilar
-RUN chmod +x mvnw && ./mvnw dependency:go-offline
+# Descargar dependencias
+RUN ./mvnw dependency:go-offline
 
-# Ahora copiamos el resto del proyecto
-COPY src ./src
+# Copiar el resto del código fuente
+COPY src src
 
-# Ejecutamos el build con Maven (sin tests)
+# Compilar el proyecto
 RUN ./mvnw clean package -DskipTests
 
-# Etapa final con solo Java para ejecutar la app
-FROM eclipse-temurin:21-jdk
+# Etapa final (runtime) con Java + Chrome
+FROM eclipse-temurin:21-jdk AS final
 
-# Creamos carpeta de ejecución
 WORKDIR /app
 
-# Copiamos el .jar desde el contenedor anterior (usamos comodín por si cambia el nombre del JAR)
-COPY --from=build /app/target/*.jar app.jar
+# Instalar Google Chrome estable y dependencias necesarias
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    unzip \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    # Reemplazar libasound2 con una alternativa
+    libasound2-plugins \
+    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install \
+    && rm -f google-chrome-stable_current_amd64.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Exponemos el puerto típico (podés ajustarlo si usás otro)
-EXPOSE 8080
+# Copiar el .jar compilado desde el builder
+COPY --from=builder /app/target/*.jar app.jar
 
-# Comando de entrada para ejecutar la app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Comando de inicio
+CMD ["java", "-jar", "app.jar"]

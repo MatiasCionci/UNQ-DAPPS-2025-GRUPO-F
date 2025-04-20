@@ -28,6 +28,7 @@ services:
       DB_NAME: dappstp
       DB_USER: postgres
       DB_PASS: postgres
+    shm_size: '1gb'  
     depends_on:
       - postgres
     restart: unless-stopped

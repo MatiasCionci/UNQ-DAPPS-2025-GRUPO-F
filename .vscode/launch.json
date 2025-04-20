@@ -1,0 +1,56 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "WhoScoredScraper",
+            "request": "launch",
+            "mainClass": "WhoScoredScraper",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
+            "name": "WhoScoredSeleniumScraperPlayers",
+            "request": "launch",
+            "mainClass": "WhoScoredSeleniumScraperPlayers",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
+            "name": "WhoScoredSeleniumScraperTeam",
+            "request": "launch",
+            "mainClass": "WhoScoredSeleniumScraperTeam",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
+            "name": "DappstpApplication",
+            "request": "launch",
+            "mainClass": "com.dappstp.dappstp.DappstpApplication",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
+            "name": "WhoScoredScraperBarcelonaPlayers",
+            "request": "launch",
+            "mainClass": "com.dappstp.dappstp.WhoScoredScraperBarcelonaPlayers",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
+            "name": "JsoupBarcelonaPlayers",
+            "request": "launch",
+            "mainClass": "com.dappstp.dappstp.service.Scraping.JsoupBarcelonaPlayers",
+            "projectName": "dappstp"
+        }
+    ]
+}
