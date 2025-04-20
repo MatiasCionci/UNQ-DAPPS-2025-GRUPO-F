@@ -31,8 +31,9 @@ public class ScraperServicePlayers {
     public List<PlayerBarcelona> scrapeAndSavePlayers() {
         log.info("🚀 Iniciando scraping...");
         List<PlayerBarcelona> players = new ArrayList<>();
+
         ChromeOptions options = new ChromeOptions();
-        // Esperar carga completa de la página (página, scripts, etc.)
+        // Usar estrategia NORMAL para esperar la carga completa
         options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
         options.addArguments(
             "--headless=new",
@@ -41,17 +42,15 @@ public class ScraperServicePlayers {
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID(),
+            // User agent para simular navegador real
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/135.0.7049.95 Safari/537.36",
-            // Opciones opcionales anti-detección, activar si es necesario:
-            // "--disable-blink-features=AutomationControlled"
+            "Chrome/135.0.7049.95 Safari/537.36"
         );
 
         WebDriver driver = null;
         try {
             driver = new ChromeDriver(options);
-            // Timeout para carga de página completa
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
