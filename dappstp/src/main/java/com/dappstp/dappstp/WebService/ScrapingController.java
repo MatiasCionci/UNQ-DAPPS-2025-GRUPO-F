@@ -34,7 +34,7 @@ import org.springframework.http.HttpStatus;
 public class ScrapingController {
     @Autowired
     private final ScraperServicePlayers scraperService;
-    private final ScraperServicePlayers scraperServicePlayers;
+    
     private final PlayerProfileScrapingService playerProfileService;
 
     // Inyección de dependencias vía constructor para ambos servicios
@@ -42,7 +42,7 @@ public class ScrapingController {
     public ScrapingController(ScraperServicePlayers scraperServicePlayers,
                               PlayerProfileScrapingService playerProfileService,
                               ScraperServicePlayers scraperService) {
-        this.scraperServicePlayers = scraperServicePlayers;
+ 
         this.playerProfileService = playerProfileService;
         this.scraperService = scraperService;
     }
