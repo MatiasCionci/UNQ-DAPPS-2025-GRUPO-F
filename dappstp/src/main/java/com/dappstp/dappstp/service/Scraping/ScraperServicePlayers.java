@@ -53,7 +53,11 @@ public class ScraperServicePlayers {
             log.debug("Inicializando ChromeDriver...");
             driver = new ChromeDriver(options);
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30)); // Aumentado a 60s por si acaso
+
+            // ***** CAMBIO 1: Definir duración y usarla *****
+            Duration waitTimeoutDuration = Duration.ofSeconds(30); // O el valor que prefieras (ej. 45)
+            WebDriverWait wait = new WebDriverWait(driver, waitTimeoutDuration);
+            // **********************************************
 
             // 1. Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
@@ -61,25 +65,24 @@ public class ScraperServicePlayers {
             driver.get(url);
 
             // 2. Cerrar SweetAlert (si aparece)
-            // (Tu código existente para SweetAlert aquí...)
             try {
                 log.debug("Intentando cerrar SweetAlert...");
                 By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
-                // Usar presenceOfElementLocated puede ser más robusto si el botón existe pero tarda en ser visible
                 WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(swalClose));
                 log.debug("SweetAlert encontrado, intentando clic JS.");
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
                 log.debug("SweetAlert cerrado.");
             } catch (TimeoutException | NoSuchElementException e) {
-                log.debug("SweetAlert no encontrado o no visible en {}s (puede que no haya aparecido).", wait.getTimeout().getSeconds());
+                // ***** CAMBIO 2: Usar variable de duración en log *****
+                log.debug("SweetAlert no encontrado o no visible en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
+                // ****************************************************
             } catch (Exception e) {
                 log.warn("Excepción inesperada al cerrar SweetAlert: {}", e.getMessage());
             }
 
 
             // 3. Cerrar cookies (si aparece)
-            // (Tu código existente para Cookies aquí...)
              try {
                 log.debug("Intentando cerrar banner de cookies...");
                 wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
@@ -94,15 +97,17 @@ public class ScraperServicePlayers {
                     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 }
                 log.debug("Banner de cookies cerrado.");
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); } // Pequeña pausa opcional
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             } catch (TimeoutException | NoSuchElementException e) {
-                log.debug("Iframe o botón de cookies no encontrado en {}s (puede que no haya aparecido).", wait.getTimeout().getSeconds());
+                // ***** CAMBIO 3: Usar variable de duración en log *****
+                log.debug("Iframe o botón de cookies no encontrado en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
+                // ****************************************************
             } catch (Exception e) {
                 log.warn("Excepción inesperada al cerrar cookies: {}", e.getMessage());
             }
             finally {
                 log.debug("Volviendo al contenido principal.");
-                driver.switchTo().defaultContent(); // Volver siempre al contenido principal
+                driver.switchTo().defaultContent();
             }
 
 
@@ -110,25 +115,16 @@ public class ScraperServicePlayers {
             try {
                 log.info("Intentando seleccionar 'LaLiga' en el desplegable de torneos...");
                 By tournamentDropdownSelector = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
-
-                // Esperar a que el desplegable esté presente y sea clickeable
                 WebElement dropdownElement = wait.until(ExpectedConditions.elementToBeClickable(tournamentDropdownSelector));
-
                 Select tournamentSelect = new Select(dropdownElement);
-                // Seleccionar por el texto visible exacto
                 tournamentSelect.selectByVisibleText("LaLiga");
-
                 log.info("'LaLiga' seleccionada. Esperando un poco a que la página se actualice...");
-                // Pausa corta para permitir que el JavaScript de la página recargue la tabla
-                try { Thread.sleep(3000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); } // Aumentado a 3s
-
+                try { Thread.sleep(3000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             } catch (TimeoutException | NoSuchElementException e) {
                 log.error("Error: No se pudo encontrar o interactuar con el desplegable de torneos 'LaLiga'. El scraping probablemente fallará.", e);
-                // Considera lanzar una excepción si la selección es crítica
                 throw new RuntimeException("No se pudo seleccionar el torneo 'LaLiga'", e);
             } catch (Exception e) {
                  log.error("Error inesperado al seleccionar 'LaLiga': {}", e.getMessage(), e);
-                 // También podrías querer relanzar aquí
                  throw new RuntimeException("Error inesperado al seleccionar 'LaLiga'", e);
             }
             // ***** FIN DEL BLOQUE AÑADIDO *****
@@ -136,39 +132,32 @@ public class ScraperServicePlayers {
 
             // 4. Extraer tabla (esperar a que sea visible)
             log.debug("Esperando la tabla de jugadores (después de seleccionar LaLiga)...");
-            // --- ¡VERIFICA ESTE ID DESPUÉS DE SELECCIONAR LALIGA! ---
             WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("player-table-statistics-body")));
             log.debug("Tabla encontrada. Extrayendo filas...");
             List<WebElement> rows = table.findElements(By.tagName("tr"));
             log.info("Encontradas {} filas en la tabla.", rows.size());
 
-            // (Tu código existente para procesar las filas aquí...)
+            // (Código para procesar las filas...)
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 15) { // Asegúrate que 15 sigue siendo el número correcto
+                if (cols.size() < 15) {
                     log.trace("Fila omitida, columnas insuficientes: {}", cols.size());
                     continue;
                 }
-
                 String name;
                 try {
-                    // Intenta obtener el nombre del span específico primero
                     WebElement span = cols.get(0).findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
                     name = span.getText().trim();
-                    // Fallback si el span está vacío pero el link existe
                     if (name.isEmpty()) {
                         name = cols.get(0).findElement(By.cssSelector("a.player-link")).getText().trim();
                         log.trace("Nombre obtenido por fallback de link: {}", name);
                     }
                 } catch (NoSuchElementException e) {
-                    // Fallback si no hay link o span, intenta obtener el texto directo
                     String[] parts = cols.get(0).getText().split("\\n");
                     name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
                     log.trace("Nombre obtenido por fallback de texto directo: {}", name);
                 }
-
-                // Asegúrate que los índices 4, 6, 7, 14 siguen siendo correctos para la tabla de LaLiga
                 String matches = cols.get(4).getText().trim();
                 int goals    = parseIntSafe(cols.get(6).getText());
                 int assists  = parseIntSafe(cols.get(7).getText());
@@ -192,11 +181,12 @@ public class ScraperServicePlayers {
                 log.warn("⚠️ No se procesaron jugadores de la tabla.");
             }
         } catch (TimeoutException e) {
-             log.error("Timeout esperando un elemento específico (WebDriverWait): {}", e.getMessage());
+             // ***** CAMBIO 4 (Opcional): Usar variable de duración en log *****
+             log.error("Timeout esperando un elemento específico (WebDriverWait con {}s): {}", waitTimeoutDuration.getSeconds(), e.getMessage());
+             // **************************************************************
         }
         catch (Exception e) {
-            // Captura errores generales
-            log.error("Error general en scraping: ", e); // Loguea la traza completa
+            log.error("Error general en scraping: ", e);
         } finally {
             if (driver != null) {
                 log.info("Cerrando WebDriver.");
@@ -208,11 +198,10 @@ public class ScraperServicePlayers {
         return players;
     }
 
-    // (Tus métodos parseIntSafe y parseDoubleSafe aquí...)
+    // (Métodos parseIntSafe y parseDoubleSafe sin cambios...)
     private int parseIntSafe(String txt) {
         if (txt==null||txt.isBlank()||txt.equals("-")) return 0;
         try {
-            // Extraer solo los dígitos antes de un posible paréntesis
             String digitsOnly = txt.split("\\(")[0].replaceAll("[^\\d]", "");
             return digitsOnly.isEmpty() ? 0 : Integer.parseInt(digitsOnly);
         } catch (Exception e) {
@@ -224,19 +213,15 @@ public class ScraperServicePlayers {
     private double parseDoubleSafe(String txt) {
         if (txt==null||txt.isBlank()||txt.equals("-")) return 0.0;
         try {
-            // Reemplazar coma por punto y quitar caracteres no numéricos excepto el punto
             String cleaned = txt.replace(",", ".").replaceAll("[^\\d.]", "");
             if (cleaned.isEmpty()) return 0.0;
-            // Asegurarse de que solo haya un punto decimal (manejar casos como "1.2.3")
             int firstDot = cleaned.indexOf('.');
             if (firstDot != -1) {
                 int secondDot = cleaned.indexOf('.', firstDot + 1);
                 if (secondDot != -1) {
-                    // Si hay un segundo punto, truncar antes de él (o manejar de otra forma si es necesario)
                     cleaned = cleaned.substring(0, secondDot);
                 }
             }
-            // Evitar NumberFormatException si queda solo "."
              if (cleaned.equals(".")) return 0.0;
             return Double.parseDouble(cleaned);
         } catch (Exception e) {
@@ -244,5 +229,4 @@ public class ScraperServicePlayers {
             return 0.0;
         }
     }
-
 }
