@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.Scraping;
+package com.dappstp.dappstp.service;
 
 import com.dappstp.dappstp.model.PlayerBarcelona;
 import com.dappstp.dappstp.repository.PlayerBarcelonaRepository;
@@ -10,9 +10,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-// ***** AÑADIR ESTA IMPORTACIÓN *****
-import org.openqa.selenium.support.ui.Select;
-// ***********************************
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -53,111 +50,81 @@ public class ScraperServicePlayers {
             log.debug("Inicializando ChromeDriver...");
             driver = new ChromeDriver(options);
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
-
-            // ***** CORRECCIÓN 1: Definir duración y usarla *****
-            Duration waitTimeoutDuration = Duration.ofSeconds(30); // Puedes ajustar este valor si es necesario (ej. 45)
-            WebDriverWait wait = new WebDriverWait(driver, waitTimeoutDuration);
-            // *************************************************
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
             // 1. Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
             log.info("Navegando a {}", url);
             driver.get(url);
 
+            // 1.5 Obtener torneo seleccionado
+            try {
+                WebElement selectedOption = driver.findElement(By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions'] > option[selected]"));
+                String torneoSeleccionado = selectedOption.getText().trim();
+                log.debug("Torneo seleccionado: {}", torneoSeleccionado);
+            } catch (NoSuchElementException e) {
+                log.warn("No se encontró el torneo seleccionado.");
+            }
+
             // 2. Cerrar SweetAlert (si aparece)
             try {
                 log.debug("Intentando cerrar SweetAlert...");
                 By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
-                WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(swalClose));
-                log.debug("SweetAlert encontrado, intentando clic JS.");
+                wait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
+                WebElement btn = driver.findElement(swalClose);
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
                 log.debug("SweetAlert cerrado.");
             } catch (TimeoutException | NoSuchElementException e) {
-                // ***** CORRECCIÓN 2: Usar variable de duración en log *****
-                log.debug("SweetAlert no encontrado o no visible en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
-                // *******************************************************
+                log.debug("SweetAlert no encontrado o no visible en 30s.");
             } catch (Exception e) {
                 log.warn("Excepción inesperada al cerrar SweetAlert: {}", e.getMessage());
             }
 
-
             // 3. Cerrar cookies (si aparece)
-             try {
+            try {
                 log.debug("Intentando cerrar banner de cookies...");
                 wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
                     By.cssSelector("iframe[title='SP Consent Message']")));
-                log.debug("Cambiado al iframe de cookies.");
                 By accept = By.xpath("//button[contains(., 'Accept') or contains(., 'Aceptar')]");
                 WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(accept));
-                log.debug("Botón de aceptar cookies encontrado, intentando clic.");
                 try { btn.click(); }
                 catch (Exception ex) {
-                    log.warn("Clic estándar en cookies falló ({}), intentando JS.", ex.getMessage());
                     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 }
-                log.debug("Banner de cookies cerrado.");
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+                Thread.sleep(1000);
             } catch (TimeoutException | NoSuchElementException e) {
-                // ***** CORRECCIÓN 3: Usar variable de duración en log *****
-                log.debug("Iframe o botón de cookies no encontrado en {}s (puede que no haya aparecido).", waitTimeoutDuration.getSeconds());
-                // *******************************************************
+                log.debug("Iframe o botón de cookies no encontrado.");
             } catch (Exception e) {
-                log.warn("Excepción inesperada al cerrar cookies: {}", e.getMessage());
-            }
-            finally {
-                log.debug("Volviendo al contenido principal.");
+                log.warn("Error al cerrar cookies: {}", e.getMessage());
+            } finally {
                 driver.switchTo().defaultContent();
             }
 
-
-            // ***** NUEVO: SELECCIONAR 'LaLiga' EN EL DESPLEGABLE *****
-            try {
-                log.info("Intentando seleccionar 'LaLiga' en el desplegable de torneos...");
-                By tournamentDropdownSelector = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
-                WebElement dropdownElement = wait.until(ExpectedConditions.elementToBeClickable(tournamentDropdownSelector));
-                Select tournamentSelect = new Select(dropdownElement);
-                tournamentSelect.selectByVisibleText("LaLiga");
-                log.info("'LaLiga' seleccionada. Esperando un poco a que la página se actualice...");
-                try { Thread.sleep(3000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
-            } catch (TimeoutException | NoSuchElementException e) {
-                log.error("Error: No se pudo encontrar o interactuar con el desplegable de torneos 'LaLiga'. El scraping probablemente fallará.", e);
-                throw new RuntimeException("No se pudo seleccionar el torneo 'LaLiga'", e);
-            } catch (Exception e) {
-                 log.error("Error inesperado al seleccionar 'LaLiga': {}", e.getMessage(), e);
-                 throw new RuntimeException("Error inesperado al seleccionar 'LaLiga'", e);
-            }
-            // ***** FIN DEL BLOQUE AÑADIDO *****
-
-
-            // 4. Extraer tabla (esperar a que sea visible)
-            log.debug("Esperando la tabla de jugadores (después de seleccionar LaLiga)...");
+            // 4. Extraer tabla
+            log.debug("Esperando la tabla de jugadores...");
             WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("player-table-statistics-body")));
-            log.debug("Tabla encontrada. Extrayendo filas...");
             List<WebElement> rows = table.findElements(By.tagName("tr"));
             log.info("Encontradas {} filas en la tabla.", rows.size());
 
-            // (Código para procesar las filas...)
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 15) {
-                    log.trace("Fila omitida, columnas insuficientes: {}", cols.size());
-                    continue;
-                }
+                if (cols.size() < 15) continue;
+
                 String name;
                 try {
-                    WebElement span = cols.get(0).findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
+                    WebElement span = cols.get(0)
+                        .findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
                     name = span.getText().trim();
                     if (name.isEmpty()) {
                         name = cols.get(0).findElement(By.cssSelector("a.player-link")).getText().trim();
-                        log.trace("Nombre obtenido por fallback de link: {}", name);
                     }
                 } catch (NoSuchElementException e) {
                     String[] parts = cols.get(0).getText().split("\\n");
                     name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-                    log.trace("Nombre obtenido por fallback de texto directo: {}", name);
                 }
+
                 String matches = cols.get(4).getText().trim();
                 int goals    = parseIntSafe(cols.get(6).getText());
                 int assists  = parseIntSafe(cols.get(7).getText());
@@ -170,20 +137,16 @@ public class ScraperServicePlayers {
                 p.setAssists(assists);
                 p.setRating(rating);
                 players.add(p);
-                log.trace("Jugador procesado: {}", name);
             }
-
 
             if (!players.isEmpty()) {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else {
-                log.warn("⚠️ No se procesaron jugadores de la tabla (¿tabla vacía?).");
+                log.warn("⚠️ No se procesaron jugadores.");
             }
         } catch (TimeoutException e) {
-             // ***** CORRECCIÓN 4 (Opcional): Usar variable de duración en log *****
-             log.error("Timeout esperando un elemento específico (WebDriverWait con {}s): {}", waitTimeoutDuration.getSeconds(), e.getMessage());
-             // *****************************************************************
+             log.error("Timeout esperando un elemento: {}", e.getMessage());
         }
         catch (Exception e) {
             log.error("Error general en scraping: ", e);
@@ -194,16 +157,14 @@ public class ScraperServicePlayers {
             }
         }
 
-        log.info("🏁 Scraping finalizado. Jugadores procesados: {}", players.size());
         return players;
     }
 
-    // (Métodos parseIntSafe y parseDoubleSafe sin cambios...)
     private int parseIntSafe(String txt) {
-        if (txt==null||txt.isBlank()||txt.equals("-")) return 0;
+        if (txt == null || txt.isBlank() || txt.equals("-")) return 0;
         try {
-            String digitsOnly = txt.split("\\(")[0].replaceAll("[^\\d]", "");
-            return digitsOnly.isEmpty() ? 0 : Integer.parseInt(digitsOnly);
+            String d = txt.split("\\(")[0].replaceAll("[^\\d]", "");
+            return d.isEmpty() ? 0 : Integer.parseInt(d);
         } catch (Exception e) {
             log.warn("Error parseando int: '{}'", txt, e);
             return 0;
@@ -211,19 +172,17 @@ public class ScraperServicePlayers {
     }
 
     private double parseDoubleSafe(String txt) {
-        if (txt==null||txt.isBlank()||txt.equals("-")) return 0.0;
+        if (txt == null || txt.isBlank() || txt.equals("-")) return 0.0;
         try {
-            String cleaned = txt.replace(",", ".").replaceAll("[^\\d.]", "");
-            if (cleaned.isEmpty()) return 0.0;
-            int firstDot = cleaned.indexOf('.');
+            String c = txt.replace(",",".").replaceAll("[^\\d.]", "");
+            int firstDot = c.indexOf('.');
             if (firstDot != -1) {
-                int secondDot = cleaned.indexOf('.', firstDot + 1);
+                int secondDot = c.indexOf('.', firstDot + 1);
                 if (secondDot != -1) {
-                    cleaned = cleaned.substring(0, secondDot);
+                    c = c.substring(0, secondDot);
                 }
             }
-             if (cleaned.equals(".")) return 0.0;
-            return Double.parseDouble(cleaned);
+            return Double.parseDouble(c);
         } catch (Exception e) {
             log.warn("Error parseando double: '{}'", txt, e);
             return 0.0;
