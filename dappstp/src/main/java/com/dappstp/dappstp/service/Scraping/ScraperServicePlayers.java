@@ -14,8 +14,6 @@ import org.openqa.selenium.PageLoadStrategy;
 import org.springframework.stereotype.Service;
 
 import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +36,20 @@ public class ScraperServicePlayers {
         String baseScreenshotPath = "/app/screenshot";
 
         ChromeOptions options = new ChromeOptions();
+        // Especificar ruta al binario de Chrome instalado en Render
+        options.setBinary("/usr/bin/google-chrome-stable");
         options.setPageLoadStrategy(PageLoadStrategy.EAGER);
-        options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage",
-                             "--disable-gpu", "--window-size=1920,1080",
-                             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                             "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                             "Chrome/135.0.7049.95 Safari/537.36",
-                             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID());
+        options.addArguments(
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1920,1080",
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/135.0.7049.95 Safari/537.36",
+            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+        );
 
         try {
             log.info("🚀 Iniciando scraping de jugadores del Barcelona...");
@@ -154,6 +159,8 @@ public class ScraperServicePlayers {
                 log.warn("⚠️ No se procesaron jugadores.");
             }
 
+        } catch (SessionNotCreatedException e) {
+            log.error("No se pudo iniciar nueva sesión de Chrome: {}", e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error general en scraping: {}", e.getMessage(), e);
         } finally {
