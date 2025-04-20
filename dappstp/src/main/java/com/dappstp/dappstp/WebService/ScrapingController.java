@@ -46,14 +46,7 @@ public class ScrapingController {
         this.playerProfileService = playerProfileService;
         this.scraperService = scraperService;
     }
-/**  @GetMapping("/players")
-    public ResponseEntity<List<PlayerBarcelona>> scrapePlayers() {
-        List<PlayerBarcelona> players = scraperServicePlayers.scrapeAndSavePlayers();
-        return ResponseEntity.ok(players);
-    }
- * 
- */
-  
+
     @GetMapping("/")
     public String index() {
         return "API DappSTP - Endpoints de Scraping disponibles en /api/scrape/...";
