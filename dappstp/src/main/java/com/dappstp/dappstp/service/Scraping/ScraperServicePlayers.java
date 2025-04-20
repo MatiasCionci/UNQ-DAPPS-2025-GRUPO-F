@@ -36,47 +36,40 @@ public class ScraperServicePlayers {
         String baseScreenshotPath = "/app/screenshot";
 
         ChromeOptions options = new ChromeOptions();
-        // Ruta al binario de Chrome en Render
         options.setBinary("/usr/bin/google-chrome-stable");
-        options.setPageLoadStrategy(PageLoadStrategy.EAGER);
+        options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
         options.addArguments(
             "--headless",
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
-            "--remote-debugging-port=9222",
             "--window-size=1920,1080",
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/135.0.7049.95 Safari/537.36",
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.7049.95 Safari/537.36",
             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
         );
 
         try {
             log.info("🚀 Iniciando scraping de jugadores del Barcelona...");
             driver = new ChromeDriver(options);
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
 
-            // Navegar a la página
-            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
-            log.info("Navegando a {}", url);
-            driver.get(url);
+            driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
 
-            // Cerrar SweetAlert si existe
+            // SweetAlert
             try {
                 By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
                 wait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
                 WebElement btn = driver.findElement(swalClose);
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose));
                 log.info("SweetAlert cerrado.");
             } catch (Exception e) {
-                log.debug("No se encontró SweetAlert o fallo al cerrarlo: {}", e.getMessage());
+                log.debug("SweetAlert no encontrado o ya cerrado.");
             }
 
-            // Cerrar banner de cookies si existe
+            // Cookies
             try {
                 wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
                     By.cssSelector("iframe[title='SP Consent Message']")));
@@ -87,34 +80,33 @@ public class ScraperServicePlayers {
                 } catch (ElementClickInterceptedException ex) {
                     ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 }
-                log.info("Banner de cookies cerrado.");
+                log.info("Cookies aceptadas.");
                 Thread.sleep(500);
             } catch (Exception e) {
-                log.debug("No se encontró banner de cookies o fallo al cerrarlo: {}", e.getMessage());
+                log.debug("Banner de cookies no encontrado.");
             } finally {
                 driver.switchTo().defaultContent();
             }
 
-            // Selección de LaLiga en el dropdown
-            By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
-            WebElement oldTable = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body"))
-            );
+            // Tabla inicial
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
+            WebElement oldTable = driver.findElement(By.id("player-table-statistics-body"));
+
+            // Selección de LaLiga
             try {
+                By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
                 WebElement selectElem = wait.until(ExpectedConditions.elementToBeClickable(torneoLocator));
                 new Select(selectElem).selectByVisibleText("LaLiga");
-                log.info("Seleccionado torneo LaLiga.");
-
+                log.info("LaLiga seleccionada.");
                 wait.until(ExpectedConditions.stalenessOf(oldTable));
-                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body")));
-                log.info("Tabla actualizada para LaLiga.");
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
             } catch (Exception e) {
-                log.error("Error seleccionando LaLiga: {}", e.getMessage());
+                log.error("Error al seleccionar LaLiga: {}", e.getMessage());
                 takeScreenshot(driver, baseScreenshotPath + "_lali.png");
                 throw e;
             }
 
-            // Extracción de jugadores
+            // Extracción
             List<WebElement> rows = driver.findElements(By.cssSelector("#player-table-statistics-body tr"));
             log.info("Filas encontradas: {}", rows.size());
 
@@ -147,17 +139,13 @@ public class ScraperServicePlayers {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else {
-                log.warn("⚠️ No se procesaron jugadores.");
+                log.warn("⚠️ No se encontraron jugadores.");
             }
 
-        } catch (SessionNotCreatedException e) {
-            log.error("No se pudo iniciar nueva sesión de Chrome: {}", e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error general en scraping: {}", e.getMessage(), e);
         } finally {
-            if (driver != null) {
-                driver.quit();
-            }
+            if (driver != null) driver.quit();
         }
 
         log.info("🏁 Scraping finalizado. Total: {} jugadores.", players.size());
