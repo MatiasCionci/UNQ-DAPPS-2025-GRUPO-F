@@ -36,16 +36,18 @@ public class ScraperServicePlayers {
         String baseScreenshotPath = "/app/screenshot";
 
         ChromeOptions options = new ChromeOptions();
-        // Especificar ruta al binario de Chrome instalado en Render
+        // Ruta al binario de Chrome en Render
         options.setBinary("/usr/bin/google-chrome-stable");
         options.setPageLoadStrategy(PageLoadStrategy.EAGER);
         options.addArguments(
-            "--headless=new",
+            "--headless",
             "--no-sandbox",
+            "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
+            "--remote-debugging-port=9222",
             "--window-size=1920,1080",
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/135.0.7049.95 Safari/537.36",
             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
@@ -57,12 +59,12 @@ public class ScraperServicePlayers {
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
 
-            // Navega a la URL
+            // Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
             log.info("Navegando a {}", url);
             driver.get(url);
 
-            // Cerrar SweetAlert
+            // Cerrar SweetAlert si existe
             try {
                 By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
                 wait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
@@ -71,10 +73,10 @@ public class ScraperServicePlayers {
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
                 log.info("SweetAlert cerrado.");
             } catch (Exception e) {
-                log.debug("Sin SweetAlert o fallo al cerrarlo: {}", e.getMessage());
+                log.debug("No se encontró SweetAlert o fallo al cerrarlo: {}", e.getMessage());
             }
 
-            // Cerrar cookies
+            // Cerrar banner de cookies si existe
             try {
                 wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
                     By.cssSelector("iframe[title='SP Consent Message']")));
@@ -88,28 +90,23 @@ public class ScraperServicePlayers {
                 log.info("Banner de cookies cerrado.");
                 Thread.sleep(500);
             } catch (Exception e) {
-                log.debug("Sin banner de cookies o fallo al cerrarlo: {}", e.getMessage());
+                log.debug("No se encontró banner de cookies o fallo al cerrarlo: {}", e.getMessage());
             } finally {
                 driver.switchTo().defaultContent();
             }
 
-            // Seleccionar LaLiga
+            // Selección de LaLiga en el dropdown
             By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
             WebElement oldTable = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body"))
             );
             try {
-                WebElement selectElem = wait.until(
-                    ExpectedConditions.elementToBeClickable(torneoLocator)
-                );
-                Select select = new Select(selectElem);
-                select.selectByVisibleText("LaLiga");
-                log.info("Seleccionado torneo LaLiga");
+                WebElement selectElem = wait.until(ExpectedConditions.elementToBeClickable(torneoLocator));
+                new Select(selectElem).selectByVisibleText("LaLiga");
+                log.info("Seleccionado torneo LaLiga.");
 
                 wait.until(ExpectedConditions.stalenessOf(oldTable));
-                wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.id("player-table-statistics-body")
-                ));
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body")));
                 log.info("Tabla actualizada para LaLiga.");
             } catch (Exception e) {
                 log.error("Error seleccionando LaLiga: {}", e.getMessage());
@@ -117,10 +114,8 @@ public class ScraperServicePlayers {
                 throw e;
             }
 
-            // Extraer jugadores
-            List<WebElement> rows = driver.findElements(
-                By.cssSelector("#player-table-statistics-body tr")
-            );
+            // Extracción de jugadores
+            List<WebElement> rows = driver.findElements(By.cssSelector("#player-table-statistics-body tr"));
             log.info("Filas encontradas: {}", rows.size());
 
             for (WebElement row : rows) {
@@ -129,17 +124,13 @@ public class ScraperServicePlayers {
 
                 String name;
                 try {
-                    name = cols.get(0)
-                        .findElement(By.cssSelector("a.player-link span.iconize-icon-left"))
-                        .getText().trim();
+                    name = cols.get(0).findElement(By.cssSelector("a.player-link span.iconize-icon-left")).getText().trim();
                     if (name.isEmpty()) {
-                        name = cols.get(0)
-                            .findElement(By.cssSelector("a.player-link"))
-                            .getText().trim();
+                        name = cols.get(0).findElement(By.cssSelector("a.player-link")).getText().trim();
                     }
                 } catch (NoSuchElementException ex) {
                     String[] parts = cols.get(0).getText().split("\\n");
-                    name = parts.length>1? parts[1].trim(): parts[0].trim();
+                    name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
                 }
                 if (name.isBlank()) continue;
 
@@ -177,7 +168,7 @@ public class ScraperServicePlayers {
         if (txt == null || txt.isBlank() || txt.equals("-")) return 0;
         try {
             String d = txt.split("\\(")[0].replaceAll("[^\\d]", "");
-            return d.isEmpty()?0:Integer.parseInt(d);
+            return d.isEmpty() ? 0 : Integer.parseInt(d);
         } catch (Exception e) {
             log.warn("parseIntSafe falló para '{}': {}", txt, e.getMessage());
             return 0;
@@ -191,7 +182,7 @@ public class ScraperServicePlayers {
             if (cleaned.isEmpty() || cleaned.equals(".")) return 0.0;
             int firstDot = cleaned.indexOf('.');
             if (firstDot != -1) {
-                int secondDot = cleaned.indexOf('.', firstDot+1);
+                int secondDot = cleaned.indexOf('.', firstDot + 1);
                 if (secondDot != -1) cleaned = cleaned.substring(0, secondDot);
             }
             return Double.parseDouble(cleaned);
