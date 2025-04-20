@@ -1,80 +1,195 @@
 package com.dappstp.dappstp.service.Scraping;
 
-import com.dappstp.dappstp.model.Player;
-import com.dappstp.dappstp.repository.PlayerRepository;
+import com.dappstp.dappstp.model.PlayerBarcelona;
+import com.dappstp.dappstp.repository.PlayerBarcelonaRepository;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Value;
+import org.openqa.selenium.PageLoadStrategy;
 import org.springframework.stereotype.Service;
 
+import java.io.FileOutputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class ScraperServicePlayers {
 
-    private final PlayerRepository playerRepository;
+    private final PlayerBarcelonaRepository playerRepository;
 
-    @Value("${scraping.barcelona.url}")
-    private String barcelonaUrl;
+    public ScraperServicePlayers(PlayerBarcelonaRepository playerRepository) {
+        this.playerRepository = playerRepository;
+    }
 
     @Transactional
-    public void scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping de jugadores del Barcelona...");
-
-        System.setProperty("webdriver.chrome.driver", "/usr/bin/chromedriver");
+    public List<PlayerBarcelona> scrapeAndSavePlayers() {
+        List<PlayerBarcelona> players = new ArrayList<>();
+        WebDriver driver = null;
+        String baseScreenshotPath = "/app/screenshot";
 
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless=new");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--disable-gpu");
-        options.addArguments("--window-size=1920,1080");
+        options.setBinary("/usr/bin/google-chrome-stable");
+        options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+        options.addArguments(
+            "--headless",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1920,1080",
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.7049.95 Safari/537.36",
+            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+        );
 
-        WebDriver driver = new ChromeDriver(options);
         try {
-            driver.get(barcelonaUrl);
-
+            log.info("🚀 Iniciando scraping de jugadores del Barcelona...");
+            driver = new ChromeDriver(options);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+
+            driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
+
+            // SweetAlert
             try {
-                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
-            } catch (NoSuchElementException e) {
-                log.error("❌ Elemento con id 'player-table-statistics-body' no encontrado. Detalles: {}", e.getMessage());
-                return;
+                By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
+                wait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
+                WebElement btn = driver.findElement(swalClose);
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose));
+                log.info("SweetAlert cerrado.");
+            } catch (Exception e) {
+                log.debug("SweetAlert no encontrado o ya cerrado.");
             }
 
-            WebElement tableBody = driver.findElement(By.id("player-table-statistics-body"));
-            List<WebElement> rows = tableBody.findElements(By.tagName("tr"));
-
-            List<Player> players = new ArrayList<>();
-            for (WebElement row : rows) {
-                List<WebElement> cells = row.findElements(By.tagName("td"));
-                if (cells.size() > 1) {
-                    String name = cells.get(0).getText();
-                    String position = cells.get(1).getText();
-                    players.add(new Player(name, position));
+            // Cookies
+            try {
+                wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
+                    By.cssSelector("iframe[title='SP Consent Message']")));
+                By acceptBtn = By.xpath("//button[contains(., 'Accept') or contains(., 'Aceptar')]");
+                WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(acceptBtn));
+                try {
+                    btn.click();
+                } catch (ElementClickInterceptedException ex) {
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
                 }
+                log.info("Cookies aceptadas.");
+                Thread.sleep(500);
+            } catch (Exception e) {
+                log.debug("Banner de cookies no encontrado.");
+            } finally {
+                driver.switchTo().defaultContent();
             }
 
-            playerRepository.saveAll(players);
-            log.info("🏁 Scraping finalizado. Total: {} jugadores.", players.size());
+            // Tabla inicial
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
+            WebElement oldTable = driver.findElement(By.id("player-table-statistics-body"));
+
+            // Selección de LaLiga
+            try {
+                By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
+                WebElement selectElem = wait.until(ExpectedConditions.elementToBeClickable(torneoLocator));
+                new Select(selectElem).selectByVisibleText("LaLiga");
+                log.info("LaLiga seleccionada.");
+                wait.until(ExpectedConditions.stalenessOf(oldTable));
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
+            } catch (Exception e) {
+                log.error("Error al seleccionar LaLiga: {}", e.getMessage());
+                takeScreenshot(driver, baseScreenshotPath + "_lali.png");
+                throw e;
+            }
+
+            // Extracción
+            List<WebElement> rows = driver.findElements(By.cssSelector("#player-table-statistics-body tr"));
+            log.info("Filas encontradas: {}", rows.size());
+
+            for (WebElement row : rows) {
+                List<WebElement> cols = row.findElements(By.tagName("td"));
+                if (cols.size() < 15) continue;
+
+                String name;
+                try {
+                    name = cols.get(0).findElement(By.cssSelector("a.player-link span.iconize-icon-left")).getText().trim();
+                    if (name.isEmpty()) {
+                        name = cols.get(0).findElement(By.cssSelector("a.player-link")).getText().trim();
+                    }
+                } catch (NoSuchElementException ex) {
+                    String[] parts = cols.get(0).getText().split("\\n");
+                    name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+                }
+                if (name.isBlank()) continue;
+
+                PlayerBarcelona p = new PlayerBarcelona();
+                p.setName(name);
+                p.setMatches(cols.get(4).getText().trim());
+                p.setGoals(parseIntSafe(cols.get(6).getText()));
+                p.setAssists(parseIntSafe(cols.get(7).getText()));
+                p.setRating(parseDoubleSafe(cols.get(14).getText()));
+                players.add(p);
+            }
+
+            if (!players.isEmpty()) {
+                playerRepository.saveAll(players);
+                log.info("✅ {} jugadores guardados.", players.size());
+            } else {
+                log.warn("⚠️ No se encontraron jugadores.");
+            }
 
         } catch (Exception e) {
-            log.error("Error general en scraping: {}", e.getMessage());
+            log.error("Error general en scraping: {}", e.getMessage(), e);
         } finally {
-            driver.quit();
+            if (driver != null) driver.quit();
+        }
+
+        log.info("🏁 Scraping finalizado. Total: {} jugadores.", players.size());
+        return players;
+    }
+
+    private int parseIntSafe(String txt) {
+        if (txt == null || txt.isBlank() || txt.equals("-")) return 0;
+        try {
+            String d = txt.split("\\(")[0].replaceAll("[^\\d]", "");
+            return d.isEmpty() ? 0 : Integer.parseInt(d);
+        } catch (Exception e) {
+            log.warn("parseIntSafe falló para '{}': {}", txt, e.getMessage());
+            return 0;
+        }
+    }
+
+    private double parseDoubleSafe(String txt) {
+        if (txt == null || txt.isBlank() || txt.equals("-")) return 0.0;
+        try {
+            String cleaned = txt.replace(",", ".").replaceAll("[^\\d.]", "");
+            if (cleaned.isEmpty() || cleaned.equals(".")) return 0.0;
+            int firstDot = cleaned.indexOf('.');
+            if (firstDot != -1) {
+                int secondDot = cleaned.indexOf('.', firstDot + 1);
+                if (secondDot != -1) cleaned = cleaned.substring(0, secondDot);
+            }
+            return Double.parseDouble(cleaned);
+        } catch (Exception e) {
+            log.warn("parseDoubleSafe falló para '{}': {}", txt, e.getMessage());
+            return 0.0;
+        }
+    }
+
+    private void takeScreenshot(WebDriver driver, String path) {
+        if (!(driver instanceof TakesScreenshot)) return;
+        try {
+            byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            try (FileOutputStream fos = new FileOutputStream(path)) {
+                fos.write(bytes);
+                log.warn("Captura guardada en: {}", path);
+            }
+        } catch (Exception e) {
+            log.error("No se pudo guardar screenshot: {}", e.getMessage());
         }
     }
 }
