@@ -45,7 +45,7 @@ jobs:
             org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=MatiasCionci_UNQ-DAPPS-2025-GRUPO-F \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=Matiascionci \
+            -Dsonar.organization=MatiasCionci \
             -Dsonar.login=fa48a407d45e0d9985f345cdf18f432f1eb331ed \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -Dsonar.verbose=true \
