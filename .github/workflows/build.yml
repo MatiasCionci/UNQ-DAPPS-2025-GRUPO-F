@@ -39,4 +39,6 @@ jobs:
         working-directory: ./dappstp
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=MatiasCionci_UNQ-DAPPS-2025-GRUPO-F  
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=MatiasCionci_UNQ-DAPPS-2025-GRUPO-F \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
