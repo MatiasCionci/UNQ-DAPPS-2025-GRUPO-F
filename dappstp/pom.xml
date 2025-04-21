@@ -35,6 +35,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 	<dependencies>
+	
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
@@ -210,6 +211,11 @@
         </execution>
       </executions>
     </plugin>
+	<plugin>
+ 		 <groupId>org.sonarsource.scanner.maven</groupId>
+  			<artifactId>sonar-maven-plugin</artifactId>
+  				<version>3.11.0.3922</version> <!-- versión actual al día de hoy -->
+	</plugin>
 
 		</plugins>
 	</build>
