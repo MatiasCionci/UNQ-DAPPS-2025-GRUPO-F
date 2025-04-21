@@ -45,10 +45,10 @@ public class ScraperServicePlayers {
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
-            "--window-size=1920,1080",
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.7049.95 Safari/537.36", // Use a recent Chrome version if possible
-            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+            "--window-size=1920,1080"
+           // "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+           //     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.7049.95 Safari/537.36", // Use a recent Chrome version if possible
+           // "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
             // "--disable-blink-features=AutomationControlled" // Consider if needed
         );
 
