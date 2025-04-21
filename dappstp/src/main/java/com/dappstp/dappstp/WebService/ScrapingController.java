@@ -31,7 +31,6 @@ import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api") // Ruta base para todos los endpoints de esta API
-@RequiredArgsConstructor 
 public class ScrapingController {
     @Autowired
     private final ScraperServicePlayers scraperService;
