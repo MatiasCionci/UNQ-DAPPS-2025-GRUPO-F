@@ -29,6 +29,11 @@ public class ScraperServicePlayers { // INICIO CLASE
 
     private final PlayerBarcelonaRepository playerRepository;
     private final String baseScreenshotPath = "/app/screenshot";
+    // Definir timeouts para claridad y fácil ajuste
+    private static final Duration PAGE_LOAD_TIMEOUT = Duration.ofSeconds(90); // Timeout para carga inicial y readyState
+    private static final Duration SWEETALERT_TIMEOUT = Duration.ofSeconds(6); // Timeout corto para SweetAlert
+    private static final Duration TABLE_PRESENCE_TIMEOUT = Duration.ofSeconds(60); // Timeout para que exista el tbody
+    private static final Duration TABLE_CONTENT_TIMEOUT = Duration.ofSeconds(45); // Timeout para que tbody tenga filas (tr)
 
     public ScraperServicePlayers(PlayerBarcelonaRepository playerRepository) {
         this.playerRepository = playerRepository;
@@ -36,12 +41,13 @@ public class ScraperServicePlayers { // INICIO CLASE
 
     @Transactional
     public List<PlayerBarcelona> scrapeAndSavePlayers() { // INICIO MÉTODO scrapeAndSavePlayers
-        // ACTUALIZACIÓN v18.4: Intento SweetAlert (6s max), sin cookies, con selección de Liga.
-        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v18.4 - SweetAlert(6s), no cookies, select Liga)...");
+        // ACTUALIZACIÓN v18.5: SweetAlert(6s max, no fail), no cookies, SIN selección de Liga.
+        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v18.5 - SweetAlert(6s), no cookies, no Liga select)...");
         List<PlayerBarcelona> players = new ArrayList<>();
         WebDriver driver = null;
-        WebDriverWait wait = null; // Wait principal (largo)
         DevTools devTools = null;
+        // No necesitamos el 'wait' general largo si usamos waits específicos
+        // WebDriverWait wait = null;
 
         ChromeOptions options = new ChromeOptions();
         options.setPageLoadStrategy(PageLoadStrategy.EAGER);
@@ -57,7 +63,7 @@ public class ScraperServicePlayers { // INICIO CLASE
         );
 
         try {
-            log.info("Inicializando ChromeDriver (v18.4)...");
+            log.info("Inicializando ChromeDriver (v18.5)...");
             driver = new ChromeDriver(options);
             log.info("ChromeDriver inicializado correctamente.");
 
@@ -74,18 +80,14 @@ public class ScraperServicePlayers { // INICIO CLASE
                 log.warn("El WebDriver actual no soporta DevTools. El bloqueo de recursos será limitado.");
             }
 
-            // Wait principal para operaciones largas (navegación, carga tabla post-selección)
-            wait = new WebDriverWait(driver, Duration.ofSeconds(180)); // 3 minutos
-
             log.info("Navegando a la página...");
             driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
             log.info("Página solicitada (PageLoadStrategy EAGER).");
 
             // Esperar explícitamente a document.readyState === 'complete'
             try {
-                // Usar un wait más corto para readyState, ya que EAGER debería ser rápido
-                WebDriverWait readyWait = new WebDriverWait(driver, Duration.ofSeconds(120));
-                log.debug("Esperando document.readyState === 'complete' (max 60s)...");
+                WebDriverWait readyWait = new WebDriverWait(driver, PAGE_LOAD_TIMEOUT); // Usar timeout de carga de página
+                log.debug("Esperando document.readyState === 'complete' (max {}s)...", PAGE_LOAD_TIMEOUT.getSeconds());
                 readyWait.until(drv -> ((JavascriptExecutor) drv).executeScript("return document.readyState").equals("complete"));
                 log.info("✅ document.readyState es 'complete'.");
             } catch (TimeoutException e) {
@@ -98,156 +100,85 @@ public class ScraperServicePlayers { // INICIO CLASE
             boolean sweetAlertClosed = false;
             // SweetAlert: Intentar cerrar por 6 segundos, NO fallar si no se puede.
             try {
-                // Wait específico y corto para el SweetAlert
-                WebDriverWait sweetAlertWait = new WebDriverWait(driver, Duration.ofSeconds(6)); // <<<--- 6 SEGUNDOS
-                log.debug("Buscando SweetAlert (max 6s)...");
+                WebDriverWait sweetAlertWait = new WebDriverWait(driver, SWEETALERT_TIMEOUT); // Usar timeout específico
+                log.debug("Buscando SweetAlert (max {}s)...", SWEETALERT_TIMEOUT.getSeconds());
                 By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
                 WebElement btn = sweetAlertWait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
                 log.debug("SweetAlert encontrado, intentando cerrar...");
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                // Esperar brevemente a que desaparezca (usando el mismo wait corto)
                 sweetAlertWait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose));
                 log.info("SweetAlert cerrado con éxito.");
                 sweetAlertClosed = true;
             } catch (TimeoutException e) {
-                log.info("SweetAlert no encontrado o no cerrado en 6 segundos. Continuando...");
+                log.info("SweetAlert no encontrado o no cerrado en {}s. Continuando...", SWEETALERT_TIMEOUT.getSeconds());
             } catch (Exception e) {
-                // Capturar otros posibles errores (NoSuchElement, etc.) sin detener el script
                 log.warn("Error inesperado al intentar cerrar SweetAlert (continuando): {}", e.getMessage());
             }
 
             // Banner de Cookies: ELIMINADO
-            log.info("Manejo del banner de cookies OMITIDO (v18.4).");
+            log.info("Manejo del banner de cookies OMITIDO (v18.5).");
 
-            // Pausa opcional si el SweetAlert FUE cerrado (puede ayudar a estabilizar)
+            // Pausa opcional si el SweetAlert FUE cerrado
             if (sweetAlertClosed) {
                 log.debug("Aplicando pausa de estabilización post-cierre SweetAlert...");
-                try { Thread.sleep(1500); } catch (InterruptedException ignored) {} // Pausa corta
+                try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
                 log.debug("Pausa de estabilización completada.");
             }
             // --- Fin Manejo de Pop-ups ---
 
 
-            // --- CAMBIO: Selección de Liga REINTRODUCIDA ---
-            // !!! VERIFICAR SELECTORES: #stages y linkText("LaLiga") podrían haber cambiado !!!
-            try {
-                log.info("Intentando seleccionar 'LaLiga'...");
-                WebDriverWait selectWait = new WebDriverWait(driver, Duration.ofSeconds(60)); // Wait para elementos de selección
-
-                // 1. Encontrar y hacer clic en el desplegable (si es necesario)
-                // Asumiendo que es un div/span que abre un menú, no un <select> real
-                 By tournamentSelectorTrigger = By.cssSelector("a.tournament-link"); // EJEMPLO - AJUSTAR SELECTOR
-                 // O si es un <select>: By tournamentSelectorTrigger = By.id("stages");
-
-                log.debug("Esperando visibilidad del selector de torneo...");
-                WebElement selectorTrigger = selectWait.until(ExpectedConditions.visibilityOfElementLocated(tournamentSelectorTrigger));
-
-                // Scroll hacia el selector si es necesario
-                try {
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", selectorTrigger);
-                    Thread.sleep(300);
-                } catch(Exception scrollEx) {log.warn("Scroll al selector falló: {}", scrollEx.getMessage());}
+            // --- CAMBIO: Selección de Liga ELIMINADA ---
+            log.info("Selección de Liga OMITIDA (v18.5). Asumiendo que la URL base es suficiente.");
+            // --- FIN CAMBIO ---
 
 
-                // Si NO es un <select>, hacer clic para abrir el menú
-                // Si ES un <select>, comentar esta línea y usar Select más abajo
-                log.debug("Haciendo clic en el trigger del selector...");
-                selectWait.until(ExpectedConditions.elementToBeClickable(selectorTrigger)).click();
-                log.debug("Trigger del selector clickeado.");
-                Thread.sleep(500); // Pequeña pausa para que aparezca el menú
-
-                // 2. Encontrar y hacer clic en la opción "LaLiga"
-                // Asumiendo que es un enlace <a> dentro del menú desplegado
-                By laLigaOption = By.xpath("//ul[contains(@class, 'tournament-list')]//a[contains(text(), 'LaLiga')]"); // EJEMPLO - AJUSTAR SELECTOR
-                log.debug("Esperando y haciendo clic en la opción 'LaLiga'...");
-                WebElement laLigaLink = selectWait.until(ExpectedConditions.elementToBeClickable(laLigaOption));
-                laLigaLink.click();
-                log.info("✅ Opción 'LaLiga' seleccionada.");
-
-                // 3. Esperar a que la tabla se actualice (IMPORTANTE)
-                //    Una forma es esperar a que el tbody se vuelva "stale" (obsoleto) y luego reaparezca,
-                //    o esperar a que un indicador de carga desaparezca.
-                //    Aquí usamos una pausa simple + espera de presencia como fallback.
-                log.debug("Esperando posible recarga de tabla post-selección de liga...");
-                try { Thread.sleep(2000); } catch (InterruptedException ignored) {} // Pausa para permitir inicio de recarga
-                // Re-esperar la presencia del tbody después de la selección
-                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
-                log.debug("Tabla (tbody) presente después de seleccionar liga.");
-
-
-                // --- Alternativa si fuera un <select> estándar ---
-                /*
-                log.debug("Esperando que el <select> de torneo sea clickeable...");
-                WebElement selectElement = selectWait.until(ExpectedConditions.elementToBeClickable(By.id("stages"))); // Asumiendo ID="stages"
-                Select tournamentSelect = new Select(selectElement);
-                log.debug("Seleccionando 'LaLiga' por texto visible...");
-                tournamentSelect.selectByVisibleText("LaLiga"); // O usar selectByValue si tiene un valor específico
-                log.info("✅ Opción 'LaLiga' seleccionada desde <select>.");
-                // Esperar recarga tabla... (como arriba)
-                log.debug("Esperando posible recarga de tabla post-selección de liga...");
-                try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
-                wait.until(ExpectedConditions.presenceOfElementLocated(By.id("player-table-statistics-body")));
-                log.debug("Tabla (tbody) presente después de seleccionar liga.");
-                */
-                // --- Fin Alternativa <select> ---
-
-
-            } catch (TimeoutException | NoSuchElementException e) {
-                log.error("❌ Error CRÍTICO al intentar seleccionar 'LaLiga'. ¿Cambiaron los selectores? {}", e.getMessage(), e);
-                takeScreenshot(driver, baseScreenshotPath + "_league_select_error_v18.4.png");
-                // Detener el proceso si no se puede seleccionar la liga correcta
-                throw new RuntimeException("Fallo al seleccionar LaLiga, no se puede continuar.", e);
-            } catch (Exception e) {
-                 log.error("❌ Error inesperado durante la selección de 'LaLiga': {}", e.getMessage(), e);
-                 takeScreenshot(driver, baseScreenshotPath + "_league_select_unexpected_error_v18.4.png");
-                 throw new RuntimeException("Error inesperado seleccionando LaLiga.", e);
-            }
-            // --- FIN Selección de Liga ---
-
-
-            // --- Espera Tabla (Post-Selección Liga) ---
+            // --- Espera Tabla (Directamente después de popups) ---
             By tableBodyLocator = By.id("player-table-statistics-body");
             By rowsLocator = By.cssSelector("#player-table-statistics-body tr");
             WebElement tableBody = null;
 
             try {
-                // Usar el wait principal (largo) aquí
-                log.debug("Esperando que el contenedor de la tabla (tbody) esté PRESENTE post-selección...");
-                tableBody = wait.until(ExpectedConditions.presenceOfElementLocated(tableBodyLocator));
-                log.info("Contenedor de tabla (tbody) PRESENTE post-selección.");
+                // Usar waits específicos para la tabla
+                WebDriverWait tablePresenceWait = new WebDriverWait(driver, TABLE_PRESENCE_TIMEOUT);
+                log.debug("Esperando que el contenedor de la tabla (tbody) esté PRESENTE (max {}s)...", TABLE_PRESENCE_TIMEOUT.getSeconds());
+                tableBody = tablePresenceWait.until(ExpectedConditions.presenceOfElementLocated(tableBodyLocator));
+                log.info("Contenedor de tabla (tbody) PRESENTE.");
 
-                // Scroll opcional (puede ser necesario de nuevo)
+                // Scroll opcional
                 try {
-                    log.debug("Forzando scroll hacia la tabla (post-selección)...");
+                    log.debug("Forzando scroll hacia la tabla...");
                     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", tableBody);
                     try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-                    log.debug("Scroll hacia la tabla completado (post-selección).");
+                    log.debug("Scroll hacia la tabla completado.");
                 } catch (Exception scrollEx) {
-                    log.warn("No se pudo forzar el scroll hacia la tabla (post-selección): {}", scrollEx.getMessage());
+                    log.warn("No se pudo forzar el scroll hacia la tabla: {}", scrollEx.getMessage());
                 }
 
-                log.debug("Esperando que al menos una fila (tr) esté PRESENTE dentro del tbody (post-selección)...");
-                wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
-                log.info("Al menos una fila (tr) PRESENTE dentro del tbody (post-selección).");
+                // Esperar contenido (filas)
+                WebDriverWait tableContentWait = new WebDriverWait(driver, TABLE_CONTENT_TIMEOUT);
+                log.debug("Esperando que al menos una fila (tr) esté PRESENTE dentro del tbody (max {}s)...", TABLE_CONTENT_TIMEOUT.getSeconds());
+                tableContentWait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
+                log.info("Al menos una fila (tr) PRESENTE dentro del tbody.");
 
             } catch (TimeoutException e) {
-                 log.error("¡ERROR CRÍTICO! Timeout esperando la PRESENCIA del tbody o filas (post-selección): {}", e.getMessage(), e);
-                 takeScreenshot(driver, baseScreenshotPath + "_tbody_or_rows_presence_timeout_post_select_v18.4.png");
+                 log.error("¡ERROR CRÍTICO! Timeout esperando la PRESENCIA del tbody ({}s) o de las filas ({}s): {}",
+                           TABLE_PRESENCE_TIMEOUT.getSeconds(), TABLE_CONTENT_TIMEOUT.getSeconds(), e.getMessage(), e);
+                 takeScreenshot(driver, baseScreenshotPath + "_tbody_or_rows_presence_timeout_v18.5.png");
                  try {
                      String bodyHtml = driver.findElement(By.tagName("body")).getAttribute("outerHTML");
-                     log.error("HTML del body en el momento del timeout (post-selección):\n{}", bodyHtml.substring(0, Math.min(bodyHtml.length(), 5000)));
+                     log.error("HTML del body en el momento del timeout:\n{}", bodyHtml.substring(0, Math.min(bodyHtml.length(), 5000)));
                  } catch (Exception htmlEx) { log.error("No se pudo obtener el HTML del body."); }
-                 throw new RuntimeException("Timeout crítico esperando la tabla/filas después de seleccionar liga.", e);
+                 throw new RuntimeException("Timeout crítico esperando la presencia de la tabla o sus filas.", e);
             } catch (NoSuchElementException nse) {
-                 log.error("Error crítico: No se encontró #player-table-statistics-body (post-selección).", nse);
-                 takeScreenshot(driver, baseScreenshotPath + "_initial_tbody_not_found_presence_post_select_v18.4.png");
-                 throw new RuntimeException("No se pudo encontrar el tbody después de seleccionar liga.", nse);
+                 log.error("Error crítico: No se encontró #player-table-statistics-body al buscar tabla/filas.", nse);
+                 takeScreenshot(driver, baseScreenshotPath + "_tbody_not_found_presence_v18.5.png");
+                 throw new RuntimeException("No se pudo encontrar el tbody inicial para extraer filas.", nse);
             }
 
             // Extracción ROBUSTA (Sin cambios en la lógica interna del bucle)
-            log.info("Procediendo a extraer jugadores de la tabla (post-selección)...");
-            List<WebElement> rows = driver.findElements(rowsLocator); // Re-buscar filas por si la tabla cambió
-            log.info("Filas encontradas para procesar (post-selección): {}", rows.size());
+            log.info("Procediendo a extraer jugadores de la tabla...");
+            List<WebElement> rows = driver.findElements(rowsLocator); // Re-buscar filas
+            log.info("Filas encontradas para procesar: {}", rows.size());
             int staleRowCount = 0;
 
              for (int i = 0; i < rows.size(); i++) {
@@ -258,7 +189,7 @@ public class ScraperServicePlayers { // INICIO CLASE
                         log.trace("Fila {} omitida, cols: {} (insuficientes o vacías)", i, cols.size());
                         continue;
                     }
-                    // ... (resto de la lógica de extracción de datos de la fila sin cambios) ...
+                    // ... (lógica de extracción de nombre y datos sin cambios) ...
                      String name;
                     WebElement firstCol = cols.get(0);
                     try {
@@ -312,38 +243,21 @@ public class ScraperServicePlayers { // INICIO CLASE
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else if (rows.isEmpty() && staleRowCount == 0) {
-                 log.warn("⚠️ La tabla (post-selección) no contenía filas de jugadores.");
-                 takeScreenshot(driver, baseScreenshotPath + "_no_rows_found_post_select_v18.4.png");
+                 log.warn("⚠️ La tabla no contenía filas de jugadores.");
+                 takeScreenshot(driver, baseScreenshotPath + "_no_rows_found_v18.5.png");
             } else if (!rows.isEmpty() && staleRowCount == rows.size()) {
-                 log.error("❌ Todas las {} filas (post-selección) se volvieron obsoletas.", rows.size());
-                 takeScreenshot(driver, baseScreenshotPath + "_all_rows_stale_post_select_v18.4.png");
+                 log.error("❌ Todas las {} filas encontradas se volvieron obsoletas.", rows.size());
+                 takeScreenshot(driver, baseScreenshotPath + "_all_rows_stale_v18.5.png");
             }
             else {
-                log.warn("⚠️ No se procesaron jugadores válidos ({} filas post-selección, {} stale).", rows.size(), staleRowCount);
-                takeScreenshot(driver, baseScreenshotPath + "_no_valid_players_processed_post_select_v18.4.png");
+                log.warn("⚠️ No se procesaron jugadores válidos ({} filas iniciales, {} stale).", rows.size(), staleRowCount);
+                takeScreenshot(driver, baseScreenshotPath + "_no_valid_players_processed_v18.5.png");
             }
 
-        } catch (TimeoutException e) { // (Manejo de excepciones sin cambios significativos)
-            String waitInfo = (wait != null) ? wait.toString() : "N/A";
-            String currentUrl = "N/A";
-            String readyState = "N/A";
-            if (driver != null) {
-                try { currentUrl = driver.getCurrentUrl(); } catch (Exception urlEx) { currentUrl = "Error URL: " + urlEx.getMessage(); }
-                try { readyState = (String)((JavascriptExecutor) driver).executeScript("return document.readyState"); } catch (Exception rsEx) { readyState = "Error State: " + rsEx.getMessage(); }
-            }
-            // Diferenciar si el timeout fue esperando la liga o la tabla final
-            if (e.getMessage() != null && e.getMessage().contains("LaLiga")) { // Asumiendo que el mensaje de error contendría "LaLiga"
-                 log.error("Timeout esperando elementos para seleccionar LaLiga. URL: {}, Estado: {}", currentUrl, readyState, e);
-            } else if (e.getMessage() != null && (e.getMessage().contains("document.readyState") )) {
-                 log.error("Timeout esperando document.readyState. URL: {}, Estado Actual: {}", currentUrl, readyState, e);
-            } else if (e.getMessage() != null && (e.getMessage().contains("player-table-statistics-body") || e.getMessage().contains("tr"))) {
-                 log.error("Timeout esperando la tabla o sus filas (post-selección). URL: {}, Estado: {}", currentUrl, readyState, e);
-            } else {
-                 log.error("Timeout general ({}) esperando un elemento. URL: {}, Estado: {}. Error: {}", waitInfo, currentUrl, readyState, e.getMessage(), e);
-            }
-            // La captura de pantalla se toma según el nombre de archivo definido en el bloque catch específico si existe
-            // takeScreenshot(driver, baseScreenshotPath + "_general_timeout_error_v18.4.png"); // Puede ser redundante si ya se tomó una más específica
-        } catch (WebDriverException e) { // (Manejo de excepciones sin cambios)
+        } catch (TimeoutException e) { // Captura timeouts generales no manejados antes
+            log.error("Timeout general no capturado previamente: {}", e.getMessage(), e);
+            takeScreenshot(driver, baseScreenshotPath + "_general_unhandled_timeout_v18.5.png");
+        } catch (WebDriverException e) { // (Manejo sin cambios)
              if (e.getMessage() != null && e.getMessage().contains("DevToolsActivePort")) {
                  log.error("Error CRÍTICO WebDriver al iniciar Chrome: {}. Causa probable: Recursos insuficientes (RAM, /dev/shm).", e.getMessage(), e);
              } else if (e.getMessage() != null && e.getMessage().contains("session deleted or not found")) {
@@ -351,13 +265,12 @@ public class ScraperServicePlayers { // INICIO CLASE
              } else {
                  log.error("Error WebDriver: {}", e.getMessage(), e);
              }
-             takeScreenshot(driver, baseScreenshotPath + "_webdriver_error_v18.4.png");
-        } catch (RuntimeException e) { // Captura la excepción relanzada (ej. fallo selección liga)
+             takeScreenshot(driver, baseScreenshotPath + "_webdriver_error_v18.5.png");
+        } catch (RuntimeException e) { // (Manejo sin cambios)
              log.error("Scraping detenido debido a error previo: {}", e.getMessage());
-             // La captura de pantalla debería haberse tomado en el bloque catch original (ej. selección liga)
-        } catch (Exception e) { // (Manejo de excepciones sin cambios)
+        } catch (Exception e) { // (Manejo sin cambios)
             log.error("Error general inesperado en scraping: {}", e.getMessage(), e);
-            takeScreenshot(driver, baseScreenshotPath + "_unexpected_error_v18.4.png");
+            takeScreenshot(driver, baseScreenshotPath + "_unexpected_error_v18.5.png");
         } finally {
             // Cerrar sesión de DevTools (Sin cambios)
             if (devTools != null) {
@@ -381,7 +294,7 @@ public class ScraperServicePlayers { // INICIO CLASE
             }
         }
 
-        log.info("🏁 Scraping finalizado (v18.4). Total procesados: {} jugadores.", players.size());
+        log.info("🏁 Scraping finalizado (v18.5). Total procesados: {} jugadores.", players.size());
         return players;
     } // FIN MÉTODO scrapeAndSavePlayers
 
