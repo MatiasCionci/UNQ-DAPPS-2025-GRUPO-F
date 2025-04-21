@@ -25,6 +25,10 @@ public class PlayerServiceImpl implements PlayerService {
         allPlayers.add(new Player("Pedri", "FC Barcelona", 25, 5, 6, 7.9)); // Añadido otro del Barça para probar filtro
     }
 
+    public PlayerServiceImpl(List<Player> players) {
+        this.allPlayers = players;
+    }
+
     @Override 
     public List<Player> getPlayersByTeam(String teamName) {
         if (teamName == null || teamName.trim().isEmpty()) {
