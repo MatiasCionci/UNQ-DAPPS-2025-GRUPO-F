@@ -48,4 +48,5 @@ jobs:
             -Dsonar.organization=Matiascionci \
             -Dsonar.login=${{ env.SONAR_TOKEN }} \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.verbose=true \
             -e -X
