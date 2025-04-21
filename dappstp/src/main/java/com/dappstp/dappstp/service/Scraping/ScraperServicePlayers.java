@@ -35,9 +35,9 @@ public class ScraperServicePlayers { // INICIO CLASE
 
     @Transactional
     public List<PlayerBarcelona> scrapeAndSavePlayers() { // INICIO MÉTODO scrapeAndSavePlayers
-        // ACTUALIZACIÓN v12: Extracción de tabla robusta (scroll + manejo StaleElement en loop).
+        // ACTUALIZACIÓN v13: Espera por presencia de tbody + presencia de filas (tr).
         //               ¡¡¡IMPORTANTE!!! RE-VERIFICA shm_size y RAM.
-        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v12 - robust table extraction)...");
+        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v13 - wait for rows presence)...");
         List<PlayerBarcelona> players = new ArrayList<>();
         WebDriver driver = null;
         WebDriverWait wait = null;
@@ -54,10 +54,11 @@ public class ScraperServicePlayers { // INICIO CLASE
         );
 
         try {
-            log.info("Inicializando ChromeDriver (v12)...");
+            log.info("Inicializando ChromeDriver (v13)...");
             driver = new ChromeDriver(options);
             log.info("ChromeDriver inicializado correctamente.");
-            wait = new WebDriverWait(driver, Duration.ofSeconds(150));
+            // Considerar aumentar aún más si 150s no bastan, pero el problema puede ser otro
+            wait = new WebDriverWait(driver, Duration.ofSeconds(180)); // Aumentado a 3 minutos
             log.info("Navegando a la página...");
             driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
             log.info("Página cargada (según PageLoadStrategy NORMAL).");
@@ -72,6 +73,7 @@ public class ScraperServicePlayers { // INICIO CLASE
                 WebElement btn = shortWait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
                 log.debug("SweetAlert encontrado, intentando cerrar...");
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+                // Usar wait largo para asegurar que desaparezca antes de continuar
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose));
                 log.info("SweetAlert cerrado.");
                 popupHandled = true;
@@ -89,13 +91,19 @@ public class ScraperServicePlayers { // INICIO CLASE
                 log.info("Cookies aceptadas.");
                 popupHandled = true;
                 driver.switchTo().defaultContent();
+                // Esperar a que el iframe desaparezca
                 shortWait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("iframe[title='SP Consent Message']")));
                 log.debug("Iframe de cookies desaparecido.");
             } catch (Exception e) {
                 log.debug("Banner de cookies no encontrado o error.");
                 try { driver.switchTo().defaultContent(); log.debug("Asegurado: Volviendo al contenido principal."); } catch (NoSuchFrameException nfex) { log.trace("Ya estábamos en defaultContent."); }
             }
-            // Pausa explícita DESPUÉS de manejar popups
+
+            // --- CAMBIO: Screenshot DESPUÉS de manejar popups ---
+            log.debug("Tomando screenshot DESPUÉS de manejar popups y volver a defaultContent...");
+            takeScreenshot(driver, baseScreenshotPath + "_after_popups_v13.png");
+
+            // Pausa explícita DESPUÉS de manejar popups (mantener)
             if (popupHandled) {
                 log.debug("Aplicando pausa de estabilización post-popup...");
                 try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
@@ -108,69 +116,67 @@ public class ScraperServicePlayers { // INICIO CLASE
             log.info("Omitiendo selección de torneo. Procediendo a extraer la tabla inicial.");
 
 
-            // --- Espera y Preparación ROBUSTA por la TABLA INICIAL ---
-            WebElement tableBody = null;
+            // --- CAMBIO: Espera por PRESENCIA de tbody y LUEGO por PRESENCIA de filas ---
             By tableBodyLocator = By.id("player-table-statistics-body");
-            try {
-                log.debug("Esperando que la tabla inicial (tbody) sea VISIBLE...");
-                tableBody = wait.until(ExpectedConditions.visibilityOfElementLocated(tableBodyLocator));
-                log.info("Tabla inicial (tbody) VISIBLE.");
+            By rowsLocator = By.cssSelector("#player-table-statistics-body tr"); // Selector para filas DENTRO del tbody
+            WebElement tableBody = null; // Para logging en caso de error de filas
 
-                // Forzar scroll hacia la tabla
+            try {
+                log.debug("Esperando que el contenedor de la tabla (tbody) esté PRESENTE en el DOM...");
+                tableBody = wait.until(ExpectedConditions.presenceOfElementLocated(tableBodyLocator));
+                log.info("Contenedor de tabla (tbody) PRESENTE.");
+
+                // Ahora, esperar que al menos una fila (tr) esté PRESENTE DENTRO del tbody
+                log.debug("Esperando que al menos una fila (tr) esté PRESENTE dentro del tbody...");
+                // Usamos presenceOfAllElementsLocatedBy que devuelve una lista no vacía si encuentra al menos uno
+                wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(rowsLocator));
+                log.info("Al menos una fila (tr) PRESENTE dentro del tbody.");
+
+                // Opcional: Scroll a la tabla ahora que sabemos que tiene filas (o al menos el tbody existe)
                 try {
                     log.debug("Forzando scroll hacia la tabla...");
                     ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", tableBody);
-                    try { Thread.sleep(500); } catch (InterruptedException ignored) {} // Pausa post-scroll
+                    try { Thread.sleep(500); } catch (InterruptedException ignored) {}
                     log.debug("Scroll hacia la tabla completado.");
                 } catch (Exception scrollEx) {
                     log.warn("No se pudo forzar el scroll hacia la tabla: {}", scrollEx.getMessage());
                 }
 
-                // Esperar que contenga al menos una fila
-                log.debug("Esperando que aparezca al menos una fila en la tabla inicial...");
-                WebDriverWait rowWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-                // Esperar al menos una fila DENTRO del tbody visible
-                rowWait.until(ExpectedConditions.numberOfElementsToBeMoreThan(By.xpath(".//tr"), 0));
-                log.debug("Al menos una fila detectada dentro de la tabla inicial.");
-
             } catch (TimeoutException e) {
-                 // Timeout esperando visibilidad del tbody o presencia de filas
-                 if (tableBody == null) { // Falló esperando visibilidad del tbody
-                     log.error("¡ERROR CRÍTICO! Timeout esperando la visibilidad inicial del tbody: {}", e.getMessage(), e);
-                     takeScreenshot(driver, baseScreenshotPath + "_initial_tbody_visibility_timeout.png");
-                     throw new RuntimeException("Timeout crítico esperando la visibilidad inicial de la tabla.", e);
-                 } else { // Falló esperando las filas dentro del tbody visible
-                     log.warn("Timeout esperando filas (<tr>) dentro de la tabla inicial visible. La tabla podría estar vacía o tardando en poblarse.");
-                     takeScreenshot(driver, baseScreenshotPath + "_no_rows_in_initial_table.png");
-                     try { log.warn("Contenido HTML del tbody inicial en el momento del timeout de filas: {}", tableBody.getAttribute("innerHTML")); } catch (Exception ignored) {}
-                     // No lanzar excepción aquí, simplemente no habrá jugadores
+                 // Si falla aquí, es más grave, porque ni siquiera aparecen las filas en el DOM
+                 log.error("¡ERROR CRÍTICO! Timeout esperando la PRESENCIA del tbody o de las filas (tr) dentro de él: {}", e.getMessage(), e);
+                 takeScreenshot(driver, baseScreenshotPath + "_tbody_or_rows_presence_timeout.png");
+                 // Intentar obtener HTML del body para depurar
+                 try {
+                     String bodyHtml = driver.findElement(By.tagName("body")).getAttribute("outerHTML");
+                     log.error("HTML del body en el momento del timeout:\n{}", bodyHtml.substring(0, Math.min(bodyHtml.length(), 5000))); // Loguear primeros 5KB
+                 } catch (Exception htmlEx) {
+                     log.error("No se pudo obtener el HTML del body.");
                  }
+                 throw new RuntimeException("Timeout crítico esperando la presencia de la tabla o sus filas.", e);
             } catch (NoSuchElementException nse) {
-                 // Esto no debería ocurrir si la espera de visibilidad funcionó, pero por si acaso
-                 log.error("Error crítico: No se encontró el elemento #player-table-statistics-body después de la espera de visibilidad.", nse);
-                 takeScreenshot(driver, baseScreenshotPath + "_initial_tbody_not_found_post_wait.png");
+                 // Si presenceOfElementLocated fallara de forma inesperada
+                 log.error("Error crítico: No se encontró el elemento #player-table-statistics-body incluso esperando presencia.", nse);
+                 takeScreenshot(driver, baseScreenshotPath + "_initial_tbody_not_found_presence.png");
                  throw new RuntimeException("No se pudo encontrar el tbody inicial para extraer filas.", nse);
             }
 
 
-            // Extracción ROBUSTA (Manejo de StaleElement en el bucle)
+            // Extracción ROBUSTA (Manejo de StaleElement en el bucle - Sin cambios v12)
             log.info("Procediendo a extraer jugadores de la tabla inicial...");
-            // Volver a buscar las filas por si el DOM cambió durante las esperas/scroll
-            List<WebElement> rows = driver.findElements(By.cssSelector("#player-table-statistics-body tr"));
+            List<WebElement> rows = driver.findElements(rowsLocator); // Usar el selector de filas ya definido
             log.info("Filas encontradas en tabla inicial para procesar: {}", rows.size());
-            int staleRowCount = 0; // Contador para filas obsoletas
+            int staleRowCount = 0;
 
-             for (int i = 0; i < rows.size(); i++) { // Usar índice para logging si es stale
+             for (int i = 0; i < rows.size(); i++) {
                 WebElement row = rows.get(i);
-                try { // --- INICIO TRY para StaleElement ---
+                try {
                     List<WebElement> cols = row.findElements(By.tagName("td"));
                     if (cols.size() < 15) {
                         log.trace("Fila {} omitida, columnas insuficientes: {}", i, cols.size());
                         continue;
                     }
-
                     String name;
-                    // Intentar extraer nombre (manejo de NoSuchElement interno)
                     try {
                         WebElement nameSpan = cols.get(0).findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
                         name = nameSpan.getText().trim();
@@ -186,13 +192,10 @@ public class ScraperServicePlayers { // INICIO CLASE
                         name = parts.length > 1 ? parts[1].trim() : parts[0].trim();
                         log.trace("Fila {}: Nombre obtenido por fallback de texto directo: '{}' de '{}'", i, name, cellText);
                     }
-
                     if (name.isBlank()) {
-                        log.warn("Fila {}: Nombre vacío detectado después de todos los fallbacks, fila omitida. Contenido celda[0]: {}", i, cols.get(0).getText());
+                        log.warn("Fila {}: Nombre vacío detectado, fila omitida. Contenido celda[0]: {}", i, cols.get(0).getText());
                         continue;
                     }
-
-                    // Extraer otros datos
                     PlayerBarcelona p = new PlayerBarcelona();
                     p.setName(name);
                     p.setMatches(cols.get(4).getText().trim());
@@ -202,32 +205,28 @@ public class ScraperServicePlayers { // INICIO CLASE
                     players.add(p);
                     log.trace("Fila {}: Jugador procesado: {}", i, p.getName());
 
-                } catch (StaleElementReferenceException e) { // --- CAPTURA StaleElement ---
+                } catch (StaleElementReferenceException e) {
                     staleRowCount++;
-                    log.warn("⚠️ Fila {} se volvió obsoleta (StaleElementReferenceException) durante el procesamiento. Saltando esta fila. Error: {}", i, e.getMessage());
-                    // Opcional: Podrías intentar re-localizar la fila y reintentar, pero por simplicidad la saltamos.
-                    continue; // Saltar a la siguiente fila
-                } // --- FIN TRY para StaleElement ---
-            } // Fin del bucle for
-
-            if (staleRowCount > 0) {
-                log.warn("Se encontraron {} filas obsoletas (stale) durante el procesamiento.", staleRowCount);
+                    log.warn("⚠️ Fila {} se volvió obsoleta (StaleElementReferenceException) durante el procesamiento. Saltando. Error: {}", i, e.getMessage());
+                    continue;
+                }
             }
 
-            // Guardar jugadores encontrados
+            if (staleRowCount > 0) { log.warn("Se encontraron {} filas obsoletas (stale).", staleRowCount); }
+
+            // Guardar jugadores
             if (!players.isEmpty()) {
                 log.info("Guardando {} jugadores...", players.size());
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else if (rows.isEmpty() && staleRowCount == 0) {
                  log.warn("⚠️ La tabla inicial no contenía filas de jugadores.");
-                 // No es necesariamente un error si la tabla está vacía por defecto
             } else if (staleRowCount == rows.size() && !rows.isEmpty()) {
-                 log.error("❌ Todas las {} filas encontradas se volvieron obsoletas. No se procesaron jugadores.", rows.size());
+                 log.error("❌ Todas las {} filas encontradas se volvieron obsoletas.", rows.size());
                  takeScreenshot(driver, baseScreenshotPath + "_all_rows_stale.png");
             }
             else {
-                log.warn("⚠️ No se procesaron jugadores válidos de la tabla inicial ({} filas encontradas, {} stale).", rows.size(), staleRowCount);
+                log.warn("⚠️ No se procesaron jugadores válidos ({} filas encontradas, {} stale).", rows.size(), staleRowCount);
                 takeScreenshot(driver, baseScreenshotPath + "_no_valid_players_processed_initial.png");
             }
 
@@ -235,8 +234,14 @@ public class ScraperServicePlayers { // INICIO CLASE
             String waitInfo = (wait != null) ? wait.toString() : "N/A";
             String currentUrl = "N/A";
             if (driver != null) { try { currentUrl = driver.getCurrentUrl(); } catch (Exception urlEx) { currentUrl = "Error al obtener URL: " + urlEx.getMessage(); } }
-            log.error("Timeout general ({}) esperando un elemento. URL actual: {}. Error: {}", waitInfo, currentUrl, e.getMessage(), e);
-            takeScreenshot(driver, baseScreenshotPath + "_general_timeout_error.png");
+            // Distinguir si el timeout fue esperando la tabla/filas o fue otro general
+            if (e.getMessage() != null && (e.getMessage().contains("player-table-statistics-body") || e.getMessage().contains("tr"))) {
+                 // El error ya se logueó dentro del try/catch específico de la tabla
+                 log.error("El TimeoutException ocurrió esperando la tabla o sus filas (ver logs anteriores).");
+            } else {
+                 log.error("Timeout general ({}) esperando un elemento. URL actual: {}. Error: {}", waitInfo, currentUrl, e.getMessage(), e);
+                 takeScreenshot(driver, baseScreenshotPath + "_general_timeout_error.png");
+            }
         } catch (WebDriverException e) {
              if (e.getMessage() != null && e.getMessage().contains("DevToolsActivePort")) {
                  log.error("Error CRÍTICO de WebDriver al iniciar Chrome: {}. Causa probable: Recursos insuficientes (RAM, /dev/shm) o crash de Chrome.", e.getMessage(), e);
