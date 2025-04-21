@@ -27,6 +27,8 @@ import java.util.List;
 public class ScraperServicePlayers { // INICIO CLASE
 
     private final PlayerBarcelonaRepository playerRepository;
+    // Ruta base para screenshots, accesible desde todos los métodos
+    private final String baseScreenshotPath = "/app/screenshot";
 
     public ScraperServicePlayers(PlayerBarcelonaRepository playerRepository) {
         this.playerRepository = playerRepository;
@@ -34,13 +36,13 @@ public class ScraperServicePlayers { // INICIO CLASE
 
     @Transactional
     public List<PlayerBarcelona> scrapeAndSavePlayers() { // INICIO MÉTODO scrapeAndSavePlayers
-        // ACTUALIZACIÓN v9: Pausa post-popups + espera de visibilidad simple para selector.
+        // ACTUALIZACIÓN v10: Usando método robusto seleccionarTorneo con JS check.
         //               ¡¡¡IMPORTANTE!!! RE-VERIFICA shm_size y RAM.
-        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v9 - pause + visibility wait)...");
+        log.info("🚀 Iniciando scraping de jugadores del Barcelona (v10 - robust select method)...");
         List<PlayerBarcelona> players = new ArrayList<>();
         WebDriver driver = null;
         WebDriverWait wait = null;
-        String baseScreenshotPath = "/app/screenshot";
+
 
         ChromeOptions options = new ChromeOptions();
         options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
@@ -54,17 +56,16 @@ public class ScraperServicePlayers { // INICIO CLASE
         );
 
         try {
-            log.info("Inicializando ChromeDriver (v9)...");
+            log.info("Inicializando ChromeDriver (v10)...");
             driver = new ChromeDriver(options);
             log.info("ChromeDriver inicializado correctamente.");
-            wait = new WebDriverWait(driver, Duration.ofSeconds(150)); // Mantener timeout general largo
+            wait = new WebDriverWait(driver, Duration.ofSeconds(150));
             log.info("Navegando a la página...");
             driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
             log.info("Página cargada (según PageLoadStrategy NORMAL).");
 
-            // --- Manejo de Pop-ups ---
-            boolean popupHandled = false; // Bandera para saber si se manejó algún popup
-
+            // --- Manejo de Pop-ups (Sin cambios v9) ---
+            boolean popupHandled = false;
             // SweetAlert
             try {
                 log.debug("Buscando SweetAlert...");
@@ -73,131 +74,52 @@ public class ScraperServicePlayers { // INICIO CLASE
                 WebElement btn = shortWait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
                 log.debug("SweetAlert encontrado, intentando cerrar...");
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose)); // Esperar a que desaparezca
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(swalClose));
                 log.info("SweetAlert cerrado.");
                 popupHandled = true;
             } catch (Exception e) {
                 log.debug("SweetAlert no encontrado o ya cerrado (Timeout corto o error: {}).", e.getMessage());
             }
-
             // Cookies
             try {
                 log.debug("Buscando banner de cookies...");
                 WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(15));
-                // Esperar iframe Y cambiar a él
-                shortWait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
-                    By.cssSelector("iframe[title='SP Consent Message']")));
+                shortWait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.cssSelector("iframe[title='SP Consent Message']")));
                 log.debug("Dentro del iframe de cookies.");
                 By acceptBtn = By.xpath("//button[.//span[contains(., 'Accept')] or contains(., 'Accept') or .//span[contains(., 'Aceptar')] or contains(., 'Aceptar')]");
-                // Esperar botón clicable DENTRO del iframe
                 WebElement btn = shortWait.until(ExpectedConditions.elementToBeClickable(acceptBtn));
                 log.debug("Botón Aceptar encontrado, intentando clic...");
-                try {
-                    btn.click();
-                } catch (ElementClickInterceptedException ex) {
-                    log.warn("Clic de cookies interceptado, usando JS.");
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                }
+                try { btn.click(); } catch (ElementClickInterceptedException ex) { log.warn("Clic de cookies interceptado, usando JS."); ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn); }
                 log.info("Cookies aceptadas.");
                 popupHandled = true;
-                // IMPORTANTE: Volver al contenido principal DESPUÉS de hacer clic
                 driver.switchTo().defaultContent();
-                // Esperar a que el iframe desaparezca del DOM principal
                 shortWait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("iframe[title='SP Consent Message']")));
                 log.debug("Iframe de cookies desaparecido.");
             } catch (Exception e) {
                 log.debug("Banner de cookies no encontrado o error (Timeout corto o error: {}).", e.getMessage());
-                // Asegurarse de volver al contenido principal incluso si falla
-                try {
-                    driver.switchTo().defaultContent();
-                    log.debug("Asegurado: Volviendo al contenido principal después de error/no encontrar cookies.");
-                } catch (NoSuchFrameException nfex) {
-                    log.trace("Ya estábamos en defaultContent o iframe no existía.");
-                }
+                try { driver.switchTo().defaultContent(); log.debug("Asegurado: Volviendo al contenido principal después de error/no encontrar cookies."); } catch (NoSuchFrameException nfex) { log.trace("Ya estábamos en defaultContent o iframe no existía."); }
             }
-            // --- Fin Manejo de Pop-ups ---
-
-            // --- CAMBIO: Pausa explícita DESPUÉS de manejar popups y volver a defaultContent ---
+            // Pausa explícita DESPUÉS de manejar popups
             if (popupHandled) {
                 log.debug("Se manejó al menos un popup. Aplicando pausa de estabilización...");
-                try { Thread.sleep(3000); } catch (InterruptedException ignored) {} // Pausa de 3 segundos
+                try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
                 log.debug("Pausa de estabilización completada.");
             } else {
                 log.debug("No se detectaron popups para manejar.");
             }
+            // --- Fin Manejo de Pop-ups ---
 
 
-            // Selección de LaLiga (Lógica v9)
-            log.info("Intentando seleccionar LaLiga...");
-            WebElement selectElem = null;
-            try {
-                By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
+            // --- CAMBIO: Llamar al método refactorizado ---
+            seleccionarTorneo(driver, wait);
 
-                log.debug("Tomando screenshot ANTES de esperar por el selector (después de pausa post-popup)...");
-                takeScreenshot(driver, baseScreenshotPath + "_before_select_wait_v9.png");
 
-                // --- CAMBIO: Volver a esperar solo visibilidad ---
-                log.debug("Esperando que el selector de torneo sea VISIBLE...");
-                selectElem = wait.until(ExpectedConditions.visibilityOfElementLocated(torneoLocator));
-                log.debug("Selector VISIBLE.");
-
-                // --- Mantener Scroll ---
-                try {
-                    log.debug("Forzando scroll hacia el selector...");
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", selectElem);
-                    try { Thread.sleep(300); } catch (InterruptedException ignored) {}
-                    log.debug("Scroll hacia el selector completado.");
-                } catch (Exception scrollEx) {
-                    log.warn("No se pudo forzar el scroll hacia el selector: {}", scrollEx.getMessage());
-                }
-
-                // --- Mantener Intento con Select y Fallback JS ---
-                log.debug("Intentando seleccionar 'LaLiga' con la clase Select...");
-                try {
-                    new Select(selectElem).selectByVisibleText("LaLiga");
-                    log.info("Opción 'LaLiga' seleccionada usando la clase Select.");
-                } catch (ElementNotInteractableException | StaleElementReferenceException enie) {
-                    log.warn("El selector era visible pero no interactuable/stale. Intentando seleccionar 'LaLiga' con JavaScript como fallback. Error original: {}", enie.getMessage());
-                    if (enie instanceof StaleElementReferenceException) {
-                         log.debug("Re-localizando elemento stale antes del fallback JS...");
-                         try {
-                             WebDriverWait shortFindWait = new WebDriverWait(driver, Duration.ofSeconds(5));
-                             selectElem = shortFindWait.until(ExpectedConditions.presenceOfElementLocated(torneoLocator));
-                         } catch (Exception findEx) {
-                              log.error("No se pudo re-localizar el elemento stale para el fallback JS: {}", findEx.getMessage());
-                              throw new RuntimeException("Fallo crítico al re-localizar selector para fallback JS.", findEx);
-                         }
-                    }
-                    if (selectElem == null) { throw new RuntimeException("Fallo crítico: selectElem es null antes del fallback JS."); }
-                    try {
-                        String script = "arguments[0].value = '8'; " + // Value para LaLiga, verificar si cambia
-                                        "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));";
-                        ((JavascriptExecutor) driver).executeScript(script, selectElem);
-                        log.info("Opción 'LaLiga' seleccionada (o intentada) usando JavaScript.");
-                        try { Thread.sleep(2500); } catch (InterruptedException ignored) {}
-                    } catch (Exception jsEx) {
-                        log.error("¡FALLÓ también el fallback con JavaScript para seleccionar LaLiga! {}", jsEx.getMessage(), jsEx);
-                        throw new RuntimeException("Fallo crítico al seleccionar LaLiga (ni Select ni JS funcionaron).", jsEx);
-                    }
-                }
-
-                // --- Espera por la actualización de la tabla ---
-                log.debug("Esperando que la tabla de jugadores sea VISIBLE después de seleccionar LaLiga...");
-                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body")));
-                log.info("Tabla de jugadores VISIBLE después de seleccionar LaLiga.");
-                try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
-                log.debug("Pausa post-selección completada.");
-
-            } catch (TimeoutException toe) {
-                 // Timeout esperando visibilidad del selector
-                 log.error("¡ERROR CRÍTICO! Timeout esperando que el selector de torneo fuera VISIBLE: {}. ¿Está el selector correcto? ¿Overlay? ¿Recursos?", toe.getMessage(), toe);
-                 takeScreenshot(driver, baseScreenshotPath + "_select_visibility_timeout_v9.png"); // Screenshot específico
-                 throw new RuntimeException("Timeout crítico esperando la visibilidad del selector de torneo.", toe);
-            } catch (Exception e) {
-                log.error("¡ERROR CRÍTICO! Fallo inesperado durante la selección de LaLiga: {}", e.getMessage(), e);
-                takeScreenshot(driver, baseScreenshotPath + "_laliga_select_unexpected_error.png");
-                throw new RuntimeException("Fallo crítico inesperado al procesar selección de LaLiga.", e);
-            }
+            // --- Espera por la actualización de la tabla (después de seleccionar LaLiga) ---
+            log.debug("Esperando que la tabla de jugadores sea VISIBLE después de seleccionar LaLiga...");
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("player-table-statistics-body")));
+            log.info("Tabla de jugadores VISIBLE después de seleccionar LaLiga.");
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {} // Pausa post-selección
+            log.debug("Pausa post-selección completada.");
 
 
             // Extracción (Sin cambios)
@@ -285,6 +207,7 @@ public class ScraperServicePlayers { // INICIO CLASE
              }
              takeScreenshot(driver, baseScreenshotPath + "_webdriver_error.png");
         } catch (RuntimeException e) {
+             // Captura excepciones relanzadas, como las del método seleccionarTorneo
              log.error("Scraping detenido debido a error previo: {}", e.getMessage());
         } catch (Exception e) {
             log.error("Error general inesperado en scraping: {}", e.getMessage(), e);
@@ -304,6 +227,107 @@ public class ScraperServicePlayers { // INICIO CLASE
         log.info("🏁 Scraping finalizado. Total procesados: {} jugadores.", players.size());
         return players;
     } // FIN MÉTODO scrapeAndSavePlayers
+
+
+    // --- NUEVO MÉTODO REFACTORIZADO ---
+    private void seleccionarTorneo(WebDriver driver, WebDriverWait wait) {
+        log.info("Intentando seleccionar LaLiga (método robusto v10)...");
+        WebElement selectElem = null; // Declarar fuera para usar en logs/fallback
+        JavascriptExecutor js = (JavascriptExecutor) driver; // Castear una sola vez
+
+        try {
+            By torneoLocator = By.cssSelector("select[data-backbone-model-attribute-dd='tournamentOptions']");
+
+            log.debug("Tomando screenshot ANTES de esperar por el selector (v10)...");
+            takeScreenshot(driver, baseScreenshotPath + "_before_select_wait_v10.png");
+
+            log.debug("Esperando que el selector de torneo esté presente...");
+            selectElem = wait.until(ExpectedConditions.presenceOfElementLocated(torneoLocator));
+            log.debug("Selector presente. Forzando scroll...");
+
+            // Forzar scroll y esperar que esté interactuable
+            js.executeScript("arguments[0].scrollIntoView({block: 'center'});", selectElem);
+            try { Thread.sleep(300); } catch (InterruptedException ignored) {} // Pausa post-scroll
+
+            log.debug("Esperando activamente que el selector esté visible, habilitado y JS-visible...");
+            // Espera activa para asegurarse que esté visible y habilitado (Selenium + JS check)
+            final WebElement finalSelectElemForLambda = selectElem; // Necesario para usar en lambda
+            wait.until(driver1 -> {
+                try {
+                    // Re-localizar dentro de la lambda es más seguro contra StaleElement
+                    WebElement elem = driver1.findElement(torneoLocator);
+                    boolean jsVisibleEnabled = (Boolean) js.executeScript(
+                        "return arguments[0].offsetParent !== null && !arguments[0].disabled;", elem);
+                    boolean seleniumChecks = elem.isDisplayed() && elem.isEnabled();
+                    log.trace("Check espera activa: Selenium (disp={}, enab={}), JS (vis/enab={})",
+                              seleniumChecks, elem.isDisplayed(), elem.isEnabled(), jsVisibleEnabled);
+                    return seleniumChecks && jsVisibleEnabled;
+                } catch (NoSuchElementException | StaleElementReferenceException lambdaEx) {
+                    log.trace("Check espera activa: Elemento no encontrado o stale, reintentando...");
+                    return false; // No está listo, reintentar
+                }
+            });
+            log.debug("Selector confirmado como listo por espera activa.");
+
+            // Re-obtener referencia fresca después de la espera por si acaso
+            selectElem = driver.findElement(torneoLocator);
+
+            // Confirmar estado justo antes de interactuar
+            log.warn("✔ Estado del select ANTES de interactuar: displayed={}, enabled={}", selectElem.isDisplayed(), selectElem.isEnabled());
+            log.warn("✔ HTML del select: {}", selectElem.getAttribute("outerHTML"));
+
+            // Intentar seleccionar con la clase Select
+            log.debug("Intentando seleccionar 'LaLiga' con la clase Select...");
+            try {
+                new Select(selectElem).selectByVisibleText("LaLiga");
+                log.info("✅ Opción 'LaLiga' seleccionada usando la clase Select.");
+
+            } catch (ElementNotInteractableException | StaleElementReferenceException enie) {
+                // Fallback con JavaScript si Select falla
+                log.warn("Select falló ({}). Intentando seleccionar 'LaLiga' con JavaScript como fallback.", enie.getMessage());
+                 // Re-localizar si fue Stale
+                 if (enie instanceof StaleElementReferenceException) {
+                     log.debug("Re-localizando elemento stale antes del fallback JS...");
+                     try {
+                         WebDriverWait shortFindWait = new WebDriverWait(driver, Duration.ofSeconds(5));
+                         selectElem = shortFindWait.until(ExpectedConditions.presenceOfElementLocated(torneoLocator));
+                     } catch (Exception findEx) {
+                          log.error("No se pudo re-localizar el elemento stale para el fallback JS: {}", findEx.getMessage());
+                          throw new RuntimeException("Fallo crítico al re-localizar selector para fallback JS.", findEx);
+                     }
+                 }
+                 if (selectElem == null) { throw new RuntimeException("Fallo crítico: selectElem es null antes del fallback JS."); }
+
+                try {
+                    // Usar JavaScript para cambiar el valor y disparar el evento 'change'
+                    // ¡¡VERIFICAR ESTE VALOR!! '8' parecía correcto antes. ChatGPT usó '4' en un ejemplo.
+                    String valueToSet = "8";
+                    log.warn("Usando JavaScript para establecer value='{}' en el select.", valueToSet);
+                    String script = "arguments[0].value = arguments[1]; " +
+                                    "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));";
+                    js.executeScript(script, selectElem, valueToSet);
+                    log.info("✅ Opción 'LaLiga' seleccionada (o intentada) usando JavaScript.");
+                    // Pausa más larga después de JS
+                    try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+
+                } catch (Exception jsEx) {
+                    log.error("❌ ¡FALLÓ también el fallback con JavaScript para seleccionar LaLiga!", jsEx);
+                    takeScreenshot(driver, baseScreenshotPath + "_torneo_js_fallback_exception.png");
+                    throw new RuntimeException("Fallo crítico al seleccionar LaLiga (ni Select ni JS funcionaron).", jsEx);
+                }
+            }
+
+        } catch (TimeoutException e) {
+            log.error("❌ Timeout esperando que el selector de torneo estuviera presente y listo para interacción (espera activa)", e);
+            takeScreenshot(driver, baseScreenshotPath + "_torneo_active_wait_timeout.png"); // Screenshot específico
+            throw new RuntimeException("Timeout: No se pudo encontrar o preparar el selector de torneo.", e);
+        } catch (Exception e) {
+            log.error("❌ Error general inesperado al intentar seleccionar el torneo", e);
+            takeScreenshot(driver, baseScreenshotPath + "_torneo_general_exception.png"); // Screenshot específico
+            throw new RuntimeException("Error inesperado durante selección de torneo.", e);
+        }
+    } // FIN MÉTODO seleccionarTorneo
+
 
     // --- Métodos auxiliares (Sin cambios) ---
     private int parseIntSafe(String txt) { // INICIO MÉTODO parseIntSafe
@@ -342,6 +366,7 @@ public class ScraperServicePlayers { // INICIO CLASE
         }
     } // FIN MÉTODO parseDoubleSafe
 
+    // Modificado para ser llamado desde seleccionarTorneo también
     private void takeScreenshot(WebDriver driver, String path) { // INICIO MÉTODO takeScreenshot
         if (driver instanceof TakesScreenshot) {
             try {
