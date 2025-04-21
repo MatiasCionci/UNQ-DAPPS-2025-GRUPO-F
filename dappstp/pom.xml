@@ -99,6 +99,11 @@
     		 <artifactId>selenium-devtools-v135</artifactId> <!-- VERSIÓN ACTUALIZADA -->
     		<version>4.31.0</version> <!-- VERSIÓN ACTUALIZADA -->
 		</dependency>
+		<dependency>
+ 			 <groupId>org.seleniumhq.selenium</groupId>
+  			<artifactId>selenium-devtools-v126</artifactId>
+  			<version>4.11.0</version>
+			</dependency>
 
 		  <!-- Spring Security -->
   		<dependency>
