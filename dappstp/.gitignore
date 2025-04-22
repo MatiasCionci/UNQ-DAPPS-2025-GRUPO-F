@@ -36,3 +36,4 @@ src/main/resources/application.properties
 application-dev.properties
 application-prod.properties
 docker-compose.yml
+dappstp.dump
