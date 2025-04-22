@@ -41,12 +41,5 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -B verify \
-            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=MatiasCionci_UNQ-DAPPS-2025-GRUPO-F \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=MatiasCionci \
-            -Dsonar.login=705b14645fce00e725885512a9bcf5e002f199fd \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -Dsonar.verbose=true \
-            -e -X
+          mvn -B verify -e -x
+         
