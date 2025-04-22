@@ -1,5 +1,4 @@
-
-package com.dappstp.dappstp.service.Scraping;
+package com.dappstp.dappstp.service.scraping;
 
 import com.dappstp.dappstp.model.PlayerBarcelona;
 import com.dappstp.dappstp.repository.PlayerBarcelonaRepository;
@@ -52,11 +51,6 @@ public class ScraperServicePlayers {
         // Directorio de datos de usuario temporal para evitar conflictos
         String userDataDir = "/tmp/chrome-profile-" + UUID.randomUUID();
         options.addArguments("--user-data-dir=" + userDataDir);
-       // Opciones anti-detección (comentadas por ahora, pueden reactivarse si es necesario)
-       // options.addArguments("--disable-blink-features=AutomationControlled");
-       // options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
-       // options.setExperimentalOption("useAutomationExtension", false);
-
         try {
             log.debug("Inicializando ChromeDriver...");
             driver = new ChromeDriver(options);

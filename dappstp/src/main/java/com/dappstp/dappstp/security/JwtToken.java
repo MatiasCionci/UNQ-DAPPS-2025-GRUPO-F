@@ -17,12 +17,12 @@ import io.jsonwebtoken.SignatureAlgorithm;
 public class JwtToken {
     
     private final String secretKey;
-    private final Long exp_date;
+    private final Long expirationDate;
 
     public JwtToken(@Value("${app.security.jwt.secret-key}") String secretKey,
-                    @Value("${app.security.expiration-time}") Long exp_date){
+                    @Value("${app.security.expiration-time}") Long expirationDate){
         this.secretKey = secretKey;
-        this.exp_date = exp_date;
+        this.expirationDate = expirationDate;
     }
 
     private Key getSigningKey() {
@@ -32,16 +32,14 @@ public class JwtToken {
 
     public String generateToken(Authentication authentication){
         Date now = new Date();
-        Date expirationToken = new Date(now.getTime() + exp_date);
+        Date expirationToken = new Date(now.getTime() + expirationDate);
 
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .setSubject(authentication.getName()) 
                 .setIssuedAt(new Date())
                 .setExpiration(expirationToken)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
-        return token;
     }
 
     public String getEmailFromJwt (String token){

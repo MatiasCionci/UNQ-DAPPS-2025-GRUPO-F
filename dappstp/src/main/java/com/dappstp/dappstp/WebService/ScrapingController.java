@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.WebService;
+package com.dappstp.dappstp.webservice;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -6,16 +6,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.PlayerBarcelona;
-import com.dappstp.dappstp.service.Scraping.ScraperServicePlayers;
-
+import com.dappstp.dappstp.service.scraping.ScraperServicePlayers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api") // Ruta base para todos los endpoints de esta API
 public class ScrapingController {
-    @Autowired
+
     private final ScraperServicePlayers scraperService;
-    
- 
+
+    private static final Logger logger = LoggerFactory.getLogger(ScrapingController.class);
 
     // Inyección de dependencias vía constructor para ambos servicios
     @Autowired
@@ -31,11 +32,11 @@ public class ScrapingController {
 
     @GetMapping("/players")
     public String getPlayers() {
-        System.out.println("➡️ Entró al endpoint /players");
+        logger.info("➡️ Entró al endpoint /players");
 
         List<PlayerBarcelona> players = scraperService.scrapeAndSavePlayers();
     
-        System.out.println("🧠 Scrap completado. Jugadores encontrados: " + players.size());
+        logger.info("🧠 Scrap completado. Jugadores encontrados: {}", players.size());
     
         StringBuilder response = new StringBuilder("Jugadores:\n");
         players.forEach(p -> {

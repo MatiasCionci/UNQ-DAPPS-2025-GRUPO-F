@@ -17,10 +17,10 @@ import com.dappstp.dappstp.repository.UserRepository;
 
 import org.junit.jupiter.api.Test;
 
-public class UserServiceTest {
+class UserServiceTest {
     
     @Test
-    public void testCreateUser_GeneratesApiKeyAndSavesUser() {
+    void testCreateUser_GeneratesApiKeyAndSavesUser() {
 
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserServiceImpl(userRepository);
@@ -41,7 +41,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testValidateApiKey() {
+    void testValidateApiKey() {
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserServiceImpl(userRepository);
 
@@ -57,7 +57,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testValidateNotApiKey() {
+    void testValidateNotApiKey() {
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserServiceImpl(userRepository);
 
@@ -65,7 +65,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetUserByApiKey() {
+    void testGetUserByApiKey() {
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserServiceImpl(userRepository);
 
@@ -85,7 +85,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testGetUserNotByApiKey() {
+    void testGetUserNotByApiKey() {
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserServiceImpl(userRepository);
 
