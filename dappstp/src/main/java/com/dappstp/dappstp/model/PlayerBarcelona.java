@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import lombok.Data;
 @Data
 @Entity
-@Table(name = "players_barceona")
+@Table(name = "players_barcelona")
 public class PlayerBarcelona {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

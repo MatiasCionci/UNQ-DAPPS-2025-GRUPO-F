@@ -1,3 +1,4 @@
+
 package com.dappstp.dappstp.service.Scraping;
 
 import com.dappstp.dappstp.model.PlayerBarcelona;
