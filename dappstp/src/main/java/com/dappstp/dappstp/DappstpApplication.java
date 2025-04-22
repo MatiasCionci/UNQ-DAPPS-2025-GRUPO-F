@@ -2,13 +2,17 @@ package com.dappstp.dappstp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SpringBootApplication
 public class DappstpApplication {
 
+	private static final Logger logger = LoggerFactory.getLogger(DappstpApplication.class);
+
 	public static void main(String[] args) {
 		SpringApplication.run(DappstpApplication.class, args);
-		System.out.println("holamundo");
+		logger.info("holamundo");
 	}
 
 }

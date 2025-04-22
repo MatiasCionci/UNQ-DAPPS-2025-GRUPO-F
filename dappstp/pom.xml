@@ -138,11 +138,6 @@
 
 	  	<!-- Swagger / OpenAPI -->
 		<!-- No necesitas swagger-annotations si usas springdoc -->
-		<!-- <dependency>
-    		<groupId>io.swagger.core.v3</groupId>
-    		<artifactId>swagger-annotations</artifactId>
-    		<version>2.2.8</version>
-		</dependency> -->
 		<dependency>
     		<groupId>org.springdoc</groupId>
     		<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -151,11 +146,6 @@
 
   		<!-- Spring Security Crypto (ya incluido transitivamente por spring-boot-starter-security) -->
   		<!-- Puedes eliminar esta dependencia explícita si quieres -->
-  		<!-- <dependency>
-    		<groupId>org.springframework.security</groupId>
-    		<artifactId>spring-security-crypto</artifactId>
-  		</dependency> -->
-
 	</dependencies>
 
 	<build>
@@ -171,7 +161,6 @@
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 							<!-- Opcional: Especificar versión de Lombok si no la hereda bien -->
-							<!-- <version>${lombok.version}</version> -->
 						</path>
 					</annotationProcessorPaths>
 				</configuration>

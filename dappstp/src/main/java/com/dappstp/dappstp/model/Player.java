@@ -9,7 +9,7 @@ public class Player {
     private String name;
 
     @Schema(description = "Equipo actual del jugador.", example = "Inter Miami CF") 
-    private String team; 
+    private String teamName; 
 
     @Schema(description = "Número total de partidos jugados por el jugador.", example = "30")
     private int matchesPlayed;
@@ -23,9 +23,9 @@ public class Player {
     @Schema(description = "Valoración media del rendimiento del jugador.", example = "8.9")
     private double rating;
 
-    public Player(String name, String team, int matchesPlayed, int goals, int assists, double rating) {
+    public Player(String name, String teamName, int matchesPlayed, int goals, int assists, double rating) {
         this.name = name;
-        this.team = team; 
+        this.teamName = teamName; 
         this.matchesPlayed = matchesPlayed;
         this.goals = goals;
         this.assists = assists;
@@ -36,8 +36,8 @@ public class Player {
         return name;
     }
 
-    public String getTeam() { 
-        return team;
+    public String getTeamName() { 
+        return teamName;
     }
 
     public int getMatchesPlayed() {
@@ -60,8 +60,8 @@ public class Player {
         this.name = name;
     }
 
-     public void setTeam(String team) { 
-        this.team = team;
+     public void setTeamName(String team) { 
+        this.teamName = team;
     }
 
     public void setMatchesPlayed(int matchesPlayed) {

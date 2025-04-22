@@ -10,7 +10,7 @@ import com.dappstp.dappstp.factory.PlayerFactory;
 import com.dappstp.dappstp.model.Player;
 import com.dappstp.dappstp.service.impl.PlayerServiceImpl; 
 
-public class PlayerServiceTest {
+class PlayerServiceTest {
     
     private PlayerService playerService;
 
