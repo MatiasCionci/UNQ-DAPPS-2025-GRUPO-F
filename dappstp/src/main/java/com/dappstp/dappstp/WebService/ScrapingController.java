@@ -1,12 +1,12 @@
-package com.dappstp.dappstp.webservice;
-
+package com.dappstp.dappstp.WebService; // Asegúrate que el paquete sea correcto para tu estructura
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.PlayerBarcelona;
-import com.dappstp.dappstp.service.scraping.ScraperServicePlayers;
+import com.dappstp.dappstp.service.Scraping.ScraperServicePlayers;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
