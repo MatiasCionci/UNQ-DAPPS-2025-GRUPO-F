@@ -52,9 +52,9 @@ public class ScraperServicePlayers {
         String userDataDir = "/tmp/chrome-profile-" + UUID.randomUUID();
         options.addArguments("--user-data-dir=" + userDataDir);
        // Opciones anti-detección (comentadas por ahora, pueden reactivarse si es necesario)
-       // options.addArguments("--disable-blink-features=AutomationControlled");
-       // options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
-       // options.setExperimentalOption("useAutomationExtension", false);
+        options.addArguments("--disable-blink-features=AutomationControlled");
+       options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
+        options.setExperimentalOption("useAutomationExtension", false);
 
         try {
             log.debug("Inicializando ChromeDriver...");
@@ -62,54 +62,14 @@ public class ScraperServicePlayers {
             // Timeout para carga de página (menos crítico con EAGER, pero se mantiene)
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
             // Timeout para esperas explícitas (WebDriverWait)
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(180));
 
             // 1. Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
             log.info("Navegando a {}", url);
             driver.get(url); // Con EAGER, esto debería retornar más rápido
 
-            // 2. Cerrar SweetAlert (si aparece)
-            try {
-                log.debug("Intentando cerrar SweetAlert...");
-                By swalClose = By.cssSelector("div.webpush-swal2-shown button.webpush-swal2-close");
-                wait.until(ExpectedConditions.visibilityOfElementLocated(swalClose));
-                WebElement btn = driver.findElement(swalClose);
-                log.debug("SweetAlert encontrado, intentando clic JS.");
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.webpush-swal2-shown")));
-                log.debug("SweetAlert cerrado.");
-            } catch (TimeoutException | NoSuchElementException e) {
-                log.debug("SweetAlert no encontrado o no visible en 30s (puede que no haya aparecido).");
-            } catch (Exception e) {
-                log.warn("Excepción inesperada al cerrar SweetAlert: {}", e.getMessage());
-            }
-
-            // 3. Cerrar cookies (si aparece)
-            try {
-                log.debug("Intentando cerrar banner de cookies...");
-                wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(
-                    By.cssSelector("iframe[title='SP Consent Message']")));
-                log.debug("Cambiado al iframe de cookies.");
-                By accept = By.xpath("//button[contains(., 'Accept') or contains(., 'Aceptar')]");
-                WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(accept));
-                log.debug("Botón de aceptar cookies encontrado, intentando clic.");
-                try { btn.click(); }
-                catch (Exception ex) {
-                    log.warn("Clic estándar en cookies falló ({}), intentando JS.", ex.getMessage());
-                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
-                }
-                log.debug("Banner de cookies cerrado.");
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {} // Pequeña pausa opcional
-            } catch (TimeoutException | NoSuchElementException e) {
-                log.debug("Iframe o botón de cookies no encontrado en 30s (puede que no haya aparecido).");
-            } catch (Exception e) {
-                log.warn("Excepción inesperada al cerrar cookies: {}", e.getMessage());
-            }
-            finally {
-                log.debug("Volviendo al contenido principal.");
-                driver.switchTo().defaultContent(); // Volver siempre al contenido principal
-            }
+    
 
             // 4. Extraer tabla (esperar a que sea visible)
             log.debug("Esperando la tabla de jugadores...");
