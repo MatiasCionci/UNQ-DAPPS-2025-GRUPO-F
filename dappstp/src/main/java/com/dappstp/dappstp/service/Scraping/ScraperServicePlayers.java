@@ -1,7 +1,7 @@
 package com.dappstp.dappstp.service.Scraping;
 
-import com.dappstp.dappstp.model.PlayerBarcelona;
-import com.dappstp.dappstp.repository.PlayerBarcelonaRepository;
+import com.dappstp.dappstp.model.Players;
+import com.dappstp.dappstp.repository.PlayersRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -22,16 +22,16 @@ import org.openqa.selenium.PageLoadStrategy;
 @Slf4j
 public class ScraperServicePlayers {
 
-    private final PlayerBarcelonaRepository playerRepository;
+    private final PlayersRepository playerRepository;
 
-    public ScraperServicePlayers(PlayerBarcelonaRepository playerRepository) {
+    public ScraperServicePlayers(PlayersRepository playerRepository) {
         this.playerRepository = playerRepository;
     }
 
     @Transactional
-    public List<PlayerBarcelona> scrapeAndSavePlayers() {
+    public List<Players> scrapeAndSavePlayers() {
         log.info("🚀 Iniciando scraping...");
-        List<PlayerBarcelona> players = new ArrayList<>();
+        List<Players> players = new ArrayList<>();
         WebDriver driver = null;
 
         ChromeOptions options = new ChromeOptions();
@@ -146,7 +146,7 @@ public class ScraperServicePlayers {
                 int assists  = parseIntSafe(cols.get(7).getText());
                 double rating= parseDoubleSafe(cols.get(14).getText());
 
-                PlayerBarcelona p = new PlayerBarcelona();
+                Players p = new Players();
                 p.setName(name);
                 p.setMatches(matches);
                 p.setGoals(goals);

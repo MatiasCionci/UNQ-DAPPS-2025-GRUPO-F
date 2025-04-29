@@ -1,10 +1,10 @@
-package com.dappstp.dappstp.WebService; // Asegúrate que el paquete sea correcto para tu estructura
+package webservices; // Asegúrate que el paquete sea correcto para tu estructura
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.dappstp.dappstp.model.PlayerBarcelona;
+import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.service.Scraping.ScraperServicePlayers;
 
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public class ScrapingController {
     public String getPlayers() {
         logger.info("➡️ Entró al endpoint /players");
 
-        List<PlayerBarcelona> players = scraperService.scrapeAndSavePlayers();
+        List<Players> players = scraperService.scrapeAndSavePlayers();
     
         logger.info("🧠 Scrap completado. Jugadores encontrados: {}", players.size());
     

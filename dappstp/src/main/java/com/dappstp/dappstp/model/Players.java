@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "players_barcelona")
-public class PlayerBarcelona {
+public class Players {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
