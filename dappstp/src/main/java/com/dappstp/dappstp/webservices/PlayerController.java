@@ -1,4 +1,4 @@
-package webservices;
+package com.dappstp.dappstp.webservices;
 
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.service.PlayersService; // Ensure PlayersService is imported

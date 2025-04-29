@@ -1,4 +1,4 @@
-package webservices; // Asegúrate que el paquete sea correcto para tu estructura
+package com.dappstp.dappstp.webservices; // Asegúrate que el paquete sea correcto para tu estructura
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
