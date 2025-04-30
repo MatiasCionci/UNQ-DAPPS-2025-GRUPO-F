@@ -1,61 +1,43 @@
-
-# Etapa de build
+# Etapa 1: Build con Maven
 FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /app
 
-# Copiar archivos necesarios para Maven
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
-# Dar permisos de ejecución a mvnw
 RUN chmod +x mvnw
-
-# Descargar dependencias
 RUN ./mvnw dependency:go-offline
 
-# Copiar el resto del código fuente
 COPY src src
 
-# Compilar el proyecto
 RUN ./mvnw clean package -DskipTests
 
-# Etapa final (runtime) con Java + Chrome
-FROM eclipse-temurin:21-jdk AS final
+# Etapa 2: Runtime con Chrome y ChromeDriver 135
+FROM amazoncorretto:21
 
+# Instalar Chrome y ChromeDriver 135
+RUN yum update -y && \
+    yum install -y wget unzip libX11 && \
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y ./google-chrome-stable_current_x86_64.rpm && \
+    rm google-chrome-stable_current_x86_64.rpm && \
+    wget https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.84/linux64/chromedriver-linux64.zip && \
+    unzip chromedriver-linux64.zip && \
+    mv chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
+    chmod +x /usr/bin/chromedriver && \
+    rm -rf chromedriver-linux64 chromedriver-linux64.zip
+
+# Variables de entorno necesarias
+ENV CHROME_BIN="/usr/bin/google-chrome"
+ENV PATH="/usr/bin:${PATH}"
+
+# Copiar el .jar desde el builder
 WORKDIR /app
-
-# Instalar Google Chrome estable y dependencias necesarias
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    unzip \
-    gnupg \
-    ca-certificates \
-    fonts-liberation \
-    libappindicator3-1 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libgdk-pixbuf2.0-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    xdg-utils \
-    # Reemplazar libasound2 con una alternativa
-    libasound2-plugins \
-    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install \
-    && rm -f google-chrome-stable_current_amd64.deb \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar el .jar compilado desde el builder
 COPY --from=builder /app/target/*.jar app.jar
 
-# Comando de inicio
+EXPOSE 8080
+
+# Comando para iniciar tu aplicación
 CMD ["java", "-jar", "app.jar"]
