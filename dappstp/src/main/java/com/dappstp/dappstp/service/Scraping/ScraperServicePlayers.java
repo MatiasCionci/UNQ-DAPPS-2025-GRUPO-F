@@ -36,7 +36,7 @@ public class ScraperServicePlayers {
         ChromeOptions options = new ChromeOptions();
         // --- CAMBIO PRINCIPAL AQUÍ ---
         // Cambiado de NORMAL a EAGER para que driver.get() no espere la carga completa (scripts, imágenes, etc.)
-        options.setPageLoadStrategy(PageLoadStrategy.EAGER);
+        options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
         // ---------------------------
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox"); // Necesario si corre como root en Docker
@@ -58,28 +58,27 @@ public class ScraperServicePlayers {
         try {
             log.debug("Inicializando ChromeDriver...");
             driver = new ChromeDriver(options);
-            // Timeout para carga de página (menos crítico con EAGER, pero se mantiene)
+
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
-            // Timeout para esperas explícitas (WebDriverWait)
-            new WebDriverWait(driver, Duration.ofSeconds(60))
-            .until(d -> ((JavascriptExecutor)d)
-            .executeScript("return document.readyState")
-            .equals("complete"));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+              // 1. Navegar a la página
+              String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
+              log.info("Navegando a {}", url);
+              driver.get(url); // Con EAGER, esto debería retornar más rápido
+  
+              // 3) Ahora sí, hacer clic en la pestaña "Statistics"
+                 By statsTab = By.xpath("//a[contains(text(),'Statistics')]");
+                WebElement tab = wait.until(ExpectedConditions.elementToBeClickable(statsTab));
+                tab.click();
 
-            // 3) cierra banners/alerts (tu código actual)
+                  // 4) Esperar a que aparezcan filas en la tabla
+                wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
+                By.cssSelector("tbody#player-table-statistics-body tr"), 
+                  0
+                    ));
+      
 
-            // 4) haz clic en "Statistics"
-            By statsTab = By.xpath("//a[contains(text(),'Statistics')]");
-            WebElement tab = new WebDriverWait(driver, Duration.ofSeconds(30))
-            .until(ExpectedConditions.elementToBeClickable(statsTab));
-            tab.click();
-          WebDriverWait wait=  new WebDriverWait(driver, Duration.ofSeconds(60));
-
-            // 1. Navegar a la página
-            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
-            log.info("Navegando a {}", url);
-            driver.get(url); // Con EAGER, esto debería retornar más rápido
-
+          
             // 2. Cerrar SweetAlert (si aparece)
             try {
                 log.debug("Intentando cerrar SweetAlert...");
