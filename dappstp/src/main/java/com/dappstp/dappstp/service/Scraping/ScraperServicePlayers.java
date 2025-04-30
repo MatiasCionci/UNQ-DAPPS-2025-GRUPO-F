@@ -3,6 +3,8 @@ import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+
+// Asegúrate de tener esta importación si no estaba ya
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -14,8 +16,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-// Asegúrate de tener esta importación si no estaba ya
-import org.openqa.selenium.PageLoadStrategy;
 
 @Service
 @Slf4j
@@ -61,7 +61,19 @@ public class ScraperServicePlayers {
             // Timeout para carga de página (menos crítico con EAGER, pero se mantiene)
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
             // Timeout para esperas explícitas (WebDriverWait)
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+            new WebDriverWait(driver, Duration.ofSeconds(60))
+            .until(d -> ((JavascriptExecutor)d)
+            .executeScript("return document.readyState")
+            .equals("complete"));
+
+            // 3) cierra banners/alerts (tu código actual)
+
+            // 4) haz clic en "Statistics"
+            By statsTab = By.xpath("//a[contains(text(),'Statistics')]");
+            WebElement tab = new WebDriverWait(driver, Duration.ofSeconds(30))
+            .until(ExpectedConditions.elementToBeClickable(statsTab));
+            tab.click();
+          WebDriverWait wait=  new WebDriverWait(driver, Duration.ofSeconds(60));
 
             // 1. Navegar a la página
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
