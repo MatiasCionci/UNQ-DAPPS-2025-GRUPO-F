@@ -113,17 +113,18 @@
    		</dependency>
 
 		 <!-- Selenium Core -->
-		 <dependency>
-    		<groupId>org.seleniumhq.selenium</groupId>
-    		<artifactId>selenium-java</artifactId>
-    		<version>4.31.0</version>
-		</dependency>
-		<!-- Selenium DevTools para la versión v135 (ya presente) -->
+	
 		<dependency>
-   			 <groupId>org.seleniumhq.selenium</groupId>
-    		 <artifactId>selenium-devtools-v135</artifactId>
-    		<version>4.31.0</version>
-		</dependency>
+  <groupId>org.seleniumhq.selenium</groupId>
+  <artifactId>selenium-java</artifactId>
+  <version>4.32.0</version>
+</dependency>
+		<!-- Selenium DevTools para la versión v135 (ya presente) -->
+	<dependency>
+  <groupId>org.seleniumhq.selenium</groupId>
+  <artifactId>selenium-devtools-v136</artifactId>
+  <version>4.32.0</version>
+</dependency>
 
 		  <!-- Spring Security -->
   		<dependency>

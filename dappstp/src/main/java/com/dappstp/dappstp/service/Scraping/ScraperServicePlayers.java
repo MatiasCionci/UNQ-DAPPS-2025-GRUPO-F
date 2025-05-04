@@ -9,7 +9,6 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +26,10 @@ public class ScraperServicePlayers {
     private final Random random = new Random();
 
     private static final List<String> USER_AGENTS = List.of(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.183 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136.0.7103.59 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15",
         "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19041"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edge/18.19041"
     );
 
     public ScraperServicePlayers(PlayersRepository playerRepository) {
@@ -39,17 +38,14 @@ public class ScraperServicePlayers {
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping con WebDriverManager y user-agent rotativo...");
+        log.info("🚀 Iniciando scraping con WebDriverManager y user‑agent rotativo...");
         List<Players> players = new ArrayList<>();
 
-        // Setup driver
         WebDriverManager.chromedriver().setup();
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
-        log.debug("User‑Agent seleccionado: {}", ua);
-
-        ChromeOptions options = new ChromeOptions();
-        options.setPageLoadStrategy(PageLoadStrategy.NONE);
-        options.addArguments(
+        ChromeOptions opts = new ChromeOptions();
+        opts.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+        opts.addArguments(
             "--headless=new",
             "--no-sandbox",
             "--disable-dev-shm-usage",
@@ -59,68 +55,47 @@ public class ScraperServicePlayers {
             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
         );
 
-        WebDriver driver = null;
+        WebDriver driver = new ChromeDriver(opts);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
         try {
-            driver = new ChromeDriver(options);
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
+            driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
 
-            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
-            log.info("Navegando a {}", url);
-            driver.get(url);
-
-            // 1) Cerrar propaganda SweetAlert2 si aparece
+            // 1) Cerrar popup de suscripción
             try {
-                WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("div.webpush-swal2-shown")
-                ));
-                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
-                closeBtn.click();
-                wait.until(ExpectedConditions.invisibilityOf(modal));
-                log.debug("🎉 Popup cerrado.");
-            } catch (TimeoutException | NoSuchElementException e) {
-                log.debug("No apareció popup de propaganda.");
+                By popupClose = By.cssSelector("button.webpush-swal2-close");
+                wait.until(ExpectedConditions.elementToBeClickable(popupClose)).click();
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.swal2-container")));
+            } catch (TimeoutException ignored) {
             }
 
-            // 2) Seleccionar "All" en el select de filas
-            try {
-                WebElement lengthSelect = wait.until(
-                    ExpectedConditions.elementToBeClickable(
-                        By.cssSelector("select[name='player-table-statistics_length']")
-                    )
-                );
-                new Select(lengthSelect).selectByVisibleText("All");
-                // esperar recarga de tabla
-                wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
-                    By.cssSelector("tbody#player-table-statistics-body tr"), 20
-                ));
-                log.debug("✅ 'All' seleccionado, al menos 21 filas cargadas.");
-            } catch (Exception e) {
-                log.warn("No se pudo cambiar número de filas: {}", e.getMessage());
+            // 2) Si existe el tab “Statistics”, hacer click
+            List<WebElement> statsTabs = driver.findElements(By.linkText("Statistics"));
+            if (!statsTabs.isEmpty()) {
+                log.debug("Pestaña 'Statistics' encontrada, haciendo click...");
+                statsTabs.get(0).click();
+            } else {
+                log.debug("No se encontró la pestaña 'Statistics', asumiendo que la tabla ya carga por defecto.");
             }
 
-            // 3) Esperar la tabla y leer todas las filas
-            WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.id("player-table-statistics-body")
-            ));
-            List<WebElement> rows = table.findElements(By.tagName("tr"));
-            log.info("🎯 Filas encontradas: {}", rows.size());
+            // 3) Esperar filas de la tabla
+            By rowsLocator = By.cssSelector("tbody#player-table-statistics-body tr");
+            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
+            List<WebElement> rows = driver.findElements(rowsLocator);
+            log.info("Encontradas {} filas en la tabla.", rows.size());
 
+            // 4) Extraer cada jugador
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.isEmpty()) {
-                    continue;
-                }
+                if (cols.size() < 5) continue;  // saltar filas inválidas
+
                 String name    = extractName(cols.get(0));
-                String matches = cols.size() > 4 ? cols.get(4).getText().trim() : "0";
-                int goals      = cols.size() > 6 ? parseIntSafe(cols.get(6).getText()) : 0;
-                int assists    = cols.size() > 7 ? parseIntSafe(cols.get(7).getText()) : 0;
-                double rating;
-                if (cols.size() > 14) {
-                    rating = parseDoubleSafe(cols.get(14).getText());
-                } else {
-                    rating = parseDoubleSafe(cols.get(cols.size() - 1).getText());
-                }
+                String matches = cols.get(4).getText().trim();
+                int    goals   = parseIntSafe(cols.get(6).getText());
+                int    assists = parseIntSafe(cols.get(7).getText());
+                double rating  = parseDoubleSafe(
+                    cols.size()>14 ? cols.get(14).getText()
+                                   : cols.get(cols.size()-1).getText()
+                );
 
                 Players p = new Players();
                 p.setName(name);
@@ -141,49 +116,35 @@ public class ScraperServicePlayers {
         } catch (Exception e) {
             log.error("Error en scraping:", e);
         } finally {
-            if (driver != null) {
-                driver.quit();
-            }
+            driver.quit();
         }
-
         return players;
     }
 
     private String extractName(WebElement cell) {
         try {
             WebElement span = cell.findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
-            String txt = span.getText().trim();
-            return txt.isEmpty()
-                ? cell.findElement(By.cssSelector("a.player-link")).getText().trim()
-                : txt;
-        } catch (NoSuchElementException e) {
+            String t = span.getText().trim();
+            if (!t.isBlank()) return t;
+            return cell.findElement(By.cssSelector("a.player-link")).getText().trim();
+        } catch (NoSuchElementException ex) {
             String[] parts = cell.getText().split("\\R");
-            return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+            return parts.length>1 ? parts[1].trim() : parts[0].trim();
         }
     }
 
     private int parseIntSafe(String txt) {
-        try {
-            String num = txt.replaceAll("[^\\d]", "");
-            return num.isEmpty() ? 0 : Integer.parseInt(num);
-        } catch (Exception e) {
-            return 0;
-        }
+        String n = txt.replaceAll("[^0-9]", "");
+        return n.isEmpty() ? 0 : Integer.parseInt(n);
     }
 
     private double parseDoubleSafe(String txt) {
-        try {
-            String clean = txt.replace(",", ".").replaceAll("[^\\d.]", "");
-            int i = clean.indexOf('.');
-            if (i != -1) {
-                int j = clean.indexOf('.', i + 1);
-                if (j != -1) {
-                    clean = clean.substring(0, j);
-                }
-            }
-            return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
-        } catch (Exception e) {
-            return 0.0;
+        String clean = txt.replace(",", ".").replaceAll("[^0-9.]", "");
+        int i = clean.indexOf('.');
+        if (i>=0) {
+            int j = clean.indexOf('.', i+1);
+            if (j>0) clean = clean.substring(0, j);
         }
+        return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
     }
 }
