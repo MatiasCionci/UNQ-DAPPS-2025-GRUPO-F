@@ -1,44 +1,37 @@
-
-# Etapa 1: Build con Maven
-FROM eclipse-temurin:21-jdk AS builder
+# Etapa de build: usa la imagen oficial de Maven para compilar
+FROM maven:3.9.5-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
+# Copiar POM y código fuente
+COPY pom.xml ./
+COPY src ./src
 
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline
+# Empaquetar la aplicación (compila, testa, genera el JAR)
+RUN mvn clean package -DskipTests
 
-COPY src src
+# Etapa final (runtime) con Java + Chrome
+FROM eclipse-temurin:21-jdk AS final
 
-RUN ./mvnw clean package -DskipTests
-
-# Etapa 2: Runtime con Chrome y ChromeDriver 135
-FROM amazoncorretto:21
-
-# Instalar Chrome y ChromeDriver 135
-RUN yum update -y && \
-    yum install -y wget unzip libX11 && \
-    wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
-    yum install -y ./google-chrome-stable_current_x86_64.rpm && \
-    rm google-chrome-stable_current_x86_64.rpm && \
-    wget https://storage.googleapis.com/chrome-for-testing-public/136.0.7103.49/linux64/chromedriver-linux64.zip && \
-    unzip chromedriver-linux64.zip && \
-    mv chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
-    chmod +x /usr/bin/chromedriver && \
-    rm -rf chromedriver-linux64 chromedriver-linux64.zip
-
-# Variables de entorno necesarias
-ENV CHROME_BIN="/usr/bin/google-chrome"
-ENV PATH="/usr/bin:${PATH}"
-
-# Copiar el .jar desde el builder
 WORKDIR /app
+
+# Instalar Google Chrome estable y dependencias mínimas
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       wget unzip gnupg ca-certificates fonts-liberation \
+       libappindicator3-1 libatk-bridge2.0-0 libatk1.0-0 libcups2 \
+       libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 \
+       libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
+       xdg-utils libasound2-plugins \
+    && wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i /tmp/chrome.deb || apt-get -fy install \
+    && rm -f /tmp/chrome.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar el JAR generado por el builder
 COPY --from=builder /app/target/*.jar app.jar
 
+# Puerto expuesto y comando de inicio
 EXPOSE 8080
-
-# Comando para iniciar tu aplicación
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

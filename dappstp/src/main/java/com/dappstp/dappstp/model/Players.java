@@ -19,4 +19,6 @@ public class Players {
     private int goals;
     private int assists;
     private double rating;
+    
+
 }
