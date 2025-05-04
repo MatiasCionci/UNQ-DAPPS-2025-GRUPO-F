@@ -1,58 +1,55 @@
 package com.dappstp.dappstp.security;
 
-import java.util.Date;
-import java.security.Key;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
-
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import java.util.Date;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
+import java.util.Base64;
 
 @Component
 public class JwtToken {
     
-    private final String secretKey;
-    private final Long expirationDate;
+    @Value("${app.security.jwt.secret-key}")  private String secretKey;
+    @Value("${app.security.expiration-time}") private long expiration; // en ms
 
-    public JwtToken(@Value("${app.security.jwt.secret-key}") String secretKey,
-                    @Value("${app.security.expiration-time}") Long expirationDate){
-        this.secretKey = secretKey;
-        this.expirationDate = expirationDate;
+    public String generateToken(UserDetails userDetails) {
+      return Jwts.builder()
+              .setSubject(userDetails.getUsername())  
+              .setIssuedAt(new Date(System.currentTimeMillis()))
+              .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 horas
+              .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+              .compact();
+  }
+
+  public String extractUsername(String token) {
+    return Jwts.parserBuilder()
+            .setSigningKey(getSigningKey())
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .getSubject(); // 🔴 Esto es lo que devuelve el username
+}
+    public boolean validateToken(String token, UserDetails userDetails) {
+      String user = extractUsername(token);
+      return (user.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+
+    private boolean isTokenExpired(String token) {
+      Date exp = Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
+                   .parseClaimsJws(token).getBody().getExpiration();
+      return exp.before(new Date());
     }
 
     private Key getSigningKey() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-        return new SecretKeySpec(keyBytes, SignatureAlgorithm.HS512.getJcaName());
+        return new SecretKeySpec(keyBytes, 0, keyBytes.length, "HmacSHA512");
     }
-
-    public String generateToken(Authentication authentication){
-        Date now = new Date();
-        Date expirationToken = new Date(now.getTime() + expirationDate);
-
-        return Jwts.builder()
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                .setSubject(authentication.getName()) 
-                .setIssuedAt(new Date())
-                .setExpiration(expirationToken)
-                .compact();
-    }
-
-    public String getEmailFromJwt (String token){
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
 }   
+    
+
+  

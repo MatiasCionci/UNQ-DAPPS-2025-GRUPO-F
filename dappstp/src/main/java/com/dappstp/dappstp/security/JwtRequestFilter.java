@@ -12,68 +12,60 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.dappstp.dappstp.service.UserService;
 
-
-import org.springframework.lang.NonNull;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
+
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
-    private final JwtToken jwtToken;
-    private final UserDetailsServiceImpl userDetailsService;
-
-    // Inyección de dependencias por constructor
-    public JwtRequestFilter(JwtToken jwtToken, UserDetailsServiceImpl userDetailsService) {
-        this.jwtToken = jwtToken;
-        this.userDetailsService = userDetailsService;
-    }
+    @Autowired private UserService userService;
+    @Autowired private JwtToken jwtToken;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        // estos paths NO pasan por el filtro
-        return path.equals("/") ||
-               path.equals("/hello") ||
-               path.startsWith("/players")  ||     
-               path.startsWith("/players/")  ||    // <-- permitimos /players sin JWT
-               path.startsWith("/auth/") ||
-               path.startsWith("/public/");
-    }
-    @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+        throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
+        String path = req.getServletPath();
+        System.out.println("Requested path: " + path);
 
-        String email = null;
-        String jwt = null;
+        // Mostrar el header Authorization para debug
+        String authHeader = req.getHeader("Authorization");
+        System.out.println("Authorization header: " + authHeader);
 
-        // 1. Extraer el token del header Authorization: "Bearer <token>"
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7); // eliminar "Bearer "
-            email = jwtToken.getEmailFromJwt(jwt);
+        // Permitir acceso sin autenticación a /auth/register y /auth/login
+        if (path.startsWith("/auth/")) {
+            System.out.println("Public path detected, skipping JWT validation");
+            chain.doFilter(req, res);
+            return;
         }
 
-        // 2. Si hay email y no está autenticado aún
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        String username = null;
+        String jwt = null;
 
-            // 3. Validar token con el email
-            if (userDetails != null) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+            username = jwtToken.extractUsername(jwt);
+            System.out.println("Extracted username from token: " + username);
+        }
 
-                // 4. Establecer el usuario autenticado en el contexto de Spring Security
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userService.loadUserByUsername(username);
+
+            if (jwtToken.validateToken(jwt, userDetails)) {
+                System.out.println("JWT is valid. Setting authentication.");
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                System.out.println("Invalid JWT.");
             }
         }
 
-        // 5. Continuar con la cadena de filtros
-        filterChain.doFilter(request, response);
+        chain.doFilter(req, res);
     }
 }
 
