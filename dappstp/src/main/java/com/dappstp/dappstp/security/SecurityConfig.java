@@ -35,6 +35,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // No se añaden filtros JWT para permitir acceso libre
+        // No se añaden filtros JWT para permitir acceso libre
         return http.build();
     }
 }
