@@ -9,6 +9,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
@@ -41,62 +42,84 @@ public class ScraperServicePlayers {
         log.info("🚀 Iniciando scraping con WebDriverManager y user-agent rotativo...");
         List<Players> players = new ArrayList<>();
 
-        // Setup ChromeDriver automáticamente
+        // Setup driver
         WebDriverManager.chromedriver().setup();
-
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
-        log.debug("User-Agent seleccionado: {}", ua);
+        log.debug("User‑Agent seleccionado: {}", ua);
 
         ChromeOptions options = new ChromeOptions();
         options.setPageLoadStrategy(PageLoadStrategy.NONE);
-        options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu");
-        options.addArguments("--window-size=1920,1080");
-        options.addArguments("--user-agent=" + ua);
-        options.addArguments("--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID());
+        options.addArguments(
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1920,1080",
+            "--user-agent=" + ua,
+            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+        );
 
         WebDriver driver = null;
         try {
             driver = new ChromeDriver(options);
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
 
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
             log.info("Navegando a {}", url);
             driver.get(url);
 
-            // Click en Statistics
-            By statsTab = By.xpath("//a[contains(text(),'Statistics')]");
-            WebElement tab = wait.until(ExpectedConditions.elementToBeClickable(statsTab));
-            tab.click();
+            // 1) Cerrar propaganda SweetAlert2 si aparece
+            try {
+                WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("div.webpush-swal2-shown")
+                ));
+                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
+                closeBtn.click();
+                wait.until(ExpectedConditions.invisibilityOf(modal));
+                log.debug("🎉 Popup cerrado.");
+            } catch (TimeoutException | NoSuchElementException e) {
+                log.debug("No apareció popup de propaganda.");
+            }
 
-            // Esperar filas
-            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
-                By.cssSelector("tbody#player-table-statistics-body tr"), 0));
+            // 2) Seleccionar "All" en el select de filas
+            try {
+                WebElement lengthSelect = wait.until(
+                    ExpectedConditions.elementToBeClickable(
+                        By.cssSelector("select[name='player-table-statistics_length']")
+                    )
+                );
+                new Select(lengthSelect).selectByVisibleText("All");
+                // esperar recarga de tabla
+                wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
+                    By.cssSelector("tbody#player-table-statistics-body tr"), 20
+                ));
+                log.debug("✅ 'All' seleccionado, al menos 21 filas cargadas.");
+            } catch (Exception e) {
+                log.warn("No se pudo cambiar número de filas: {}", e.getMessage());
+            }
 
-            // Procesar tabla
+            // 3) Esperar la tabla y leer todas las filas
             WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.id("player-table-statistics-body")));
+                By.id("player-table-statistics-body")
+            ));
             List<WebElement> rows = table.findElements(By.tagName("tr"));
-            log.info("Encontradas {} filas en la tabla.", rows.size());
+            log.info("🎯 Filas encontradas: {}", rows.size());
 
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                log.trace("Fila con {} columnas.", cols.size());
                 if (cols.isEmpty()) {
-                    continue; // fila vacía o header
+                    continue;
                 }
-
-                String name = extractName(cols.get(0));
+                String name    = extractName(cols.get(0));
                 String matches = cols.size() > 4 ? cols.get(4).getText().trim() : "0";
-                int goals = cols.size() > 6 ? parseIntSafe(cols.get(6).getText()) : 0;
-                int assists = cols.size() > 7 ? parseIntSafe(cols.get(7).getText()) : 0;
+                int goals      = cols.size() > 6 ? parseIntSafe(cols.get(6).getText()) : 0;
+                int assists    = cols.size() > 7 ? parseIntSafe(cols.get(7).getText()) : 0;
                 double rating;
                 if (cols.size() > 14) {
                     rating = parseDoubleSafe(cols.get(14).getText());
                 } else {
-                    // rating en la última columna si índice 14 no existe
-                    String txt = cols.get(cols.size() - 1).getText();
-                    rating = parseDoubleSafe(txt);
+                    rating = parseDoubleSafe(cols.get(cols.size() - 1).getText());
                 }
 
                 Players p = new Players();
@@ -130,10 +153,9 @@ public class ScraperServicePlayers {
         try {
             WebElement span = cell.findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
             String txt = span.getText().trim();
-            if (!txt.isEmpty()) {
-                return txt;
-            }
-            return cell.findElement(By.cssSelector("a.player-link")).getText().trim();
+            return txt.isEmpty()
+                ? cell.findElement(By.cssSelector("a.player-link")).getText().trim()
+                : txt;
         } catch (NoSuchElementException e) {
             String[] parts = cell.getText().split("\\R");
             return parts.length > 1 ? parts[1].trim() : parts[0].trim();

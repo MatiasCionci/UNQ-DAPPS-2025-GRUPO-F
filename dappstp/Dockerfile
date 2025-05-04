@@ -23,6 +23,7 @@ RUN apt-get update \
        libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 \
        libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
        xdg-utils libasound2-plugins \
+       libgbm1 libvulkan1 \
     && wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && dpkg -i /tmp/chrome.deb || apt-get -fy install \
     && rm -f /tmp/chrome.deb \
