@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
@@ -39,14 +38,15 @@ public class ScraperServicePlayers {
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping en modo stealth...");
+        log.info("🚀 Iniciando scraping con WebDriverManager y user‑agent rotativo...");
         List<Players> players = new ArrayList<>();
 
-        // Setup WebDriver
-        WebDriverManager.chromedriver().clearDriverCache().setup();
+        // 1) Setup driver
+        WebDriverManager.chromedriver().setup();
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
         ChromeOptions opts = new ChromeOptions();
-        String profile = "/app/chrome-profile-" + UUID.randomUUID();
+        opts.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+        String userDataDir = "/app/chrome-user-data-" + UUID.randomUUID();
         opts.addArguments(
             "--headless=new",
             "--no-sandbox",
@@ -54,54 +54,56 @@ public class ScraperServicePlayers {
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
-            "--lang=es-ES",
-            "--user-data-dir=" + profile,
-            "--disable-blink-features=AutomationControlled"
+            "--user-data-dir=" + userDataDir,
+            "--remote-allow-origins=*"
         );
-        // Stealth JavaScript tweaks
-        opts.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
-        opts.setExperimentalOption("useAutomationExtension", false);
 
         WebDriver driver = new ChromeDriver(opts);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+
         try {
-            // Stealth: override webdriver flag
-            ((JavascriptExecutor) driver).executeScript(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-            );
+            // 2) Navegar a la página
+            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
+            log.info("🌐 Navegando a {}", url);
+            driver.get(url);
 
-            // Navigate and wait for Cloudflare challenge to pass
-            driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
-            // Wait until CF challenge disappears (no div[id*="cf-challenge"])
-            wait.until((ExpectedCondition<Boolean>) d -> 
-                ((JavascriptExecutor) d).executeScript("return document.readyState").equals("complete")
-            );
-
-            // Close subscription popup if present
+            // 3) Cerrar popup de suscripción si aparece
             try {
-                By popup = By.cssSelector("button.webpush-swal2-close");
-                wait.until(ExpectedConditions.elementToBeClickable(popup)).click();
+                By popupClose = By.cssSelector("button.webpush-swal2-close");
+                wait.until(ExpectedConditions.elementToBeClickable(popupClose)).click();
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.swal2-container")));
-            } catch (TimeoutException ignored) {}
+            } catch (TimeoutException ignored) {
+            }
 
-            // Click "Statistics" tab if exists
-            driver.findElements(By.linkText("Statistics")).stream().findFirst().ifPresent(WebElement::click);
+            // 4) Seleccionar pestaña “En general” (Overall)
+            try {
+                By overallTab = By.cssSelector("a.option[data-value='Overall']");
+                log.debug("Esperando pestaña 'En general'…");
+                wait.until(ExpectedConditions.elementToBeClickable(overallTab)).click();
+                log.debug("Pestaña 'En general' clickeada.");
+                Thread.sleep(1_000);  // dar tiempo a recargar la tabla
+            } catch (Exception e) {
+                log.warn("No se pudo clicar 'En general', puede que ya estuviera seleccionado.", e);
+            }
 
-            // Wait for table rows
-            By rowsSel = By.cssSelector("tbody#player-table-statistics-body tr");
-            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsSel, 0));
-            List<WebElement> rows = driver.findElements(rowsSel);
+            // 5) Esperar a que la tabla cargue sus filas
+            By rowsLocator = By.cssSelector("tbody#player-table-statistics-body tr");
+            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
+            List<WebElement> rows = driver.findElements(rowsLocator);
             log.info("🎯 Filas encontradas: {}", rows.size());
 
+            // 6) Extraer datos de cada fila
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
                 if (cols.size() < 5) continue;
-                String name = extractName(cols.get(0));
+
+                String name    = extractName(cols.get(0));
                 String matches = cols.get(4).getText().trim();
-                int goals = parseIntSafe(cols.get(6).getText());
-                int assists = parseIntSafe(cols.get(7).getText());
-                double rating = parseDoubleSafe(
-                    cols.size() > 14 ? cols.get(14).getText() : cols.get(cols.size()-1).getText()
+                int    goals   = parseIntSafe(cols.get(6).getText());
+                int    assists = parseIntSafe(cols.get(7).getText());
+                double rating  = parseDoubleSafe(
+                    cols.size() > 14 ? cols.get(14).getText() 
+                                     : cols.get(cols.size() - 1).getText()
                 );
 
                 Players p = new Players();
@@ -113,17 +115,20 @@ public class ScraperServicePlayers {
                 players.add(p);
             }
 
+            // 7) Guardar en la base si hay resultados
             if (!players.isEmpty()) {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
             } else {
                 log.warn("⚠️ No se procesaron jugadores.");
             }
+
         } catch (Exception e) {
             log.error("Error en scraping:", e);
         } finally {
             driver.quit();
         }
+
         return players;
     }
 
@@ -135,7 +140,7 @@ public class ScraperServicePlayers {
             return cell.findElement(By.cssSelector("a.player-link")).getText().trim();
         } catch (NoSuchElementException ex) {
             String[] parts = cell.getText().split("\\R");
-            return parts.length>1 ? parts[1].trim() : parts[0].trim();
+            return parts.length > 1 ? parts[1].trim() : parts[0].trim();
         }
     }
 
@@ -147,9 +152,9 @@ public class ScraperServicePlayers {
     private double parseDoubleSafe(String txt) {
         String clean = txt.replace(",", ".").replaceAll("[^0-9.]", "");
         int i = clean.indexOf('.');
-        if (i>=0) {
-            int j = clean.indexOf('.', i+1);
-            if (j>0) clean = clean.substring(0, j);
+        if (i >= 0) {
+            int j = clean.indexOf('.', i + 1);
+            if (j > 0) clean = clean.substring(0, j);
         }
         return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
     }
