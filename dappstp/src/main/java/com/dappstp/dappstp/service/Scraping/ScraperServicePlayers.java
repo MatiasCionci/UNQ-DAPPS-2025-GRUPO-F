@@ -49,11 +49,12 @@ public class ScraperServicePlayers {
         opts.addArguments(
             "--headless=new",
             "--no-sandbox",
-            // "--disable-dev-shm-usage", // Comentado para probar
+            "--disable-dev-shm-usage", 
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
-            "--user-data-dir=" + userDataDir
+            "--user-data-dir=" + userDataDir,
+            "--remote-allow-origins=*"
         );
 
         WebDriver driver = new ChromeDriver(opts);
