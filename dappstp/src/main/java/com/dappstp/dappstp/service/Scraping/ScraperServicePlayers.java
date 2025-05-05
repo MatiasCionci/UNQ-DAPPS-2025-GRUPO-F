@@ -38,15 +38,14 @@ public class ScraperServicePlayers {
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping con WebDriverManager y user‑agent rotativo...");
+        log.info("🚀 Iniciando scraping (versión DEBUG de página)...");
         List<Players> players = new ArrayList<>();
 
-        // 1) Setup driver
+        // 1) Configuro driver
         WebDriverManager.chromedriver().setup();
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
         ChromeOptions opts = new ChromeOptions();
         opts.setPageLoadStrategy(PageLoadStrategy.NORMAL);
-        String userDataDir = "/app/chrome-user-data-" + UUID.randomUUID();
         opts.addArguments(
             "--headless=new",
             "--no-sandbox",
@@ -54,7 +53,7 @@ public class ScraperServicePlayers {
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
-            "--user-data-dir=" + userDataDir,
+            "--user-data-dir=/app/chrome-user-data-" + UUID.randomUUID(),
             "--remote-allow-origins=*"
         );
 
@@ -62,47 +61,32 @@ public class ScraperServicePlayers {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
 
         try {
-            // 2) Navegar a la página
+            // 2) Navego
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
-            log.info("🌐 Navegando a {}", url);
             driver.get(url);
+            
+            // 3) DEBUG: imprimo URL real y fragmento de HTML
+            log.info("🔍 URL real tras navegar: {}", driver.getCurrentUrl());
+            String html = driver.getPageSource();
+            log.info("🔍 Fragmento de página (primeros 2000 chars):\n{}", 
+                     html.substring(0, Math.min(html.length(), 2000)));
 
-            // 3) Cerrar popup de suscripción si aparece
-            try {
-                By popupClose = By.cssSelector("button.webpush-swal2-close");
-                wait.until(ExpectedConditions.elementToBeClickable(popupClose)).click();
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.swal2-container")));
-            } catch (TimeoutException ignored) {
-            }
-
-            // 4) Seleccionar pestaña “En general” (Overall)
-            try {
-                By overallTab = By.cssSelector("a.option[data-value='Overall']");
-                log.debug("Esperando pestaña 'En general'…");
-                wait.until(ExpectedConditions.elementToBeClickable(overallTab)).click();
-                log.debug("Pestaña 'En general' clickeada.");
-                Thread.sleep(1_000);  // dar tiempo a recargar la tabla
-            } catch (Exception e) {
-                log.warn("No se pudo clicar 'En general', puede que ya estuviera seleccionado.", e);
-            }
-
-            // 5) Esperar a que la tabla cargue sus filas
+            // 4) Ahora intento extraer filas
             By rowsLocator = By.cssSelector("tbody#player-table-statistics-body tr");
             wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
             List<WebElement> rows = driver.findElements(rowsLocator);
             log.info("🎯 Filas encontradas: {}", rows.size());
 
-            // 6) Extraer datos de cada fila
+            // 5) Procesar cada fila
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
                 if (cols.size() < 5) continue;
-
                 String name    = extractName(cols.get(0));
                 String matches = cols.get(4).getText().trim();
                 int    goals   = parseIntSafe(cols.get(6).getText());
                 int    assists = parseIntSafe(cols.get(7).getText());
                 double rating  = parseDoubleSafe(
-                    cols.size() > 14 ? cols.get(14).getText() 
+                    cols.size() > 14 ? cols.get(14).getText()
                                      : cols.get(cols.size() - 1).getText()
                 );
 
@@ -115,7 +99,7 @@ public class ScraperServicePlayers {
                 players.add(p);
             }
 
-            // 7) Guardar en la base si hay resultados
+            // 6) Guardar en BD
             if (!players.isEmpty()) {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
