@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
@@ -38,65 +39,69 @@ public class ScraperServicePlayers {
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping con WebDriverManager y user‑agent rotativo...");
+        log.info("🚀 Iniciando scraping en modo stealth...");
         List<Players> players = new ArrayList<>();
 
-        WebDriverManager.chromedriver().setup();
+        // Setup WebDriver
+        WebDriverManager.chromedriver().clearDriverCache().setup();
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
         ChromeOptions opts = new ChromeOptions();
-        opts.setPageLoadStrategy(PageLoadStrategy.NORMAL);
-        String userDataDir = "/app/chrome-user-data-" + UUID.randomUUID(); // Nuevo directorio para el perfil
+        String profile = "/app/chrome-profile-" + UUID.randomUUID();
         opts.addArguments(
             "--headless=new",
             "--no-sandbox",
-            "--disable-dev-shm-usage", 
+            "--disable-dev-shm-usage",
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
-            "--user-data-dir=" + userDataDir,
-            "--remote-allow-origins=*"
+            "--lang=es-ES",
+            "--user-data-dir=" + profile,
+            "--disable-blink-features=AutomationControlled"
         );
+        // Stealth JavaScript tweaks
+        opts.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
+        opts.setExperimentalOption("useAutomationExtension", false);
 
         WebDriver driver = new ChromeDriver(opts);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
         try {
+            // Stealth: override webdriver flag
+            ((JavascriptExecutor) driver).executeScript(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+            );
+
+            // Navigate and wait for Cloudflare challenge to pass
             driver.get("https://www.whoscored.com/teams/65/show/spain-barcelona");
+            // Wait until CF challenge disappears (no div[id*="cf-challenge"])
+            wait.until((ExpectedCondition<Boolean>) d -> 
+                ((JavascriptExecutor) d).executeScript("return document.readyState").equals("complete")
+            );
 
-            // 1) Cerrar popup de suscripción
+            // Close subscription popup if present
             try {
-                By popupClose = By.cssSelector("button.webpush-swal2-close");
-                wait.until(ExpectedConditions.elementToBeClickable(popupClose)).click();
+                By popup = By.cssSelector("button.webpush-swal2-close");
+                wait.until(ExpectedConditions.elementToBeClickable(popup)).click();
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.swal2-container")));
-            } catch (TimeoutException ignored) {
-            }
+            } catch (TimeoutException ignored) {}
 
-            // 2) Si existe el tab “Statistics”, hacer click
-            List<WebElement> statsTabs = driver.findElements(By.linkText("Statistics"));
-            if (!statsTabs.isEmpty()) {
-                log.debug("Pestaña 'Statistics' encontrada, haciendo click...");
-                statsTabs.get(0).click();
-            } else {
-                log.debug("No se encontró la pestaña 'Statistics', asumiendo que la tabla ya carga por defecto.");
-            }
+            // Click "Statistics" tab if exists
+            driver.findElements(By.linkText("Statistics")).stream().findFirst().ifPresent(WebElement::click);
 
-            // 3) Esperar filas de la tabla
-            By rowsLocator = By.cssSelector("tbody#player-table-statistics-body tr");
-            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsLocator, 0));
-            List<WebElement> rows = driver.findElements(rowsLocator);
-            log.info("Encontradas {} filas en la tabla.", rows.size());
+            // Wait for table rows
+            By rowsSel = By.cssSelector("tbody#player-table-statistics-body tr");
+            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rowsSel, 0));
+            List<WebElement> rows = driver.findElements(rowsSel);
+            log.info("🎯 Filas encontradas: {}", rows.size());
 
-            // 4) Extraer cada jugador
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 5) continue; // saltar filas inválidas
-
+                if (cols.size() < 5) continue;
                 String name = extractName(cols.get(0));
                 String matches = cols.get(4).getText().trim();
                 int goals = parseIntSafe(cols.get(6).getText());
                 int assists = parseIntSafe(cols.get(7).getText());
                 double rating = parseDoubleSafe(
-                    cols.size()>14 ? cols.get(14).getText()
-                                   : cols.get(cols.size()-1).getText()
+                    cols.size() > 14 ? cols.get(14).getText() : cols.get(cols.size()-1).getText()
                 );
 
                 Players p = new Players();
@@ -114,7 +119,6 @@ public class ScraperServicePlayers {
             } else {
                 log.warn("⚠️ No se procesaron jugadores.");
             }
-
         } catch (Exception e) {
             log.error("Error en scraping:", e);
         } finally {
