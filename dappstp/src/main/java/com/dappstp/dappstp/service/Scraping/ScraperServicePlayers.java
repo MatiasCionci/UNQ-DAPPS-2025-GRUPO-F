@@ -45,14 +45,15 @@ public class ScraperServicePlayers {
         String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
         ChromeOptions opts = new ChromeOptions();
         opts.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+        String userDataDir = "/app/chrome-user-data-" + UUID.randomUUID(); // Nuevo directorio para el perfil
         opts.addArguments(
             "--headless=new",
             "--no-sandbox",
-            "--disable-dev-shm-usage",
+            // "--disable-dev-shm-usage", // Comentado para probar
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
-            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+            "--user-data-dir=" + userDataDir
         );
 
         WebDriver driver = new ChromeDriver(opts);
@@ -86,13 +87,13 @@ public class ScraperServicePlayers {
             // 4) Extraer cada jugador
             for (WebElement row : rows) {
                 List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.size() < 5) continue;  // saltar filas inválidas
+                if (cols.size() < 5) continue; // saltar filas inválidas
 
-                String name    = extractName(cols.get(0));
+                String name = extractName(cols.get(0));
                 String matches = cols.get(4).getText().trim();
-                int    goals   = parseIntSafe(cols.get(6).getText());
-                int    assists = parseIntSafe(cols.get(7).getText());
-                double rating  = parseDoubleSafe(
+                int goals = parseIntSafe(cols.get(6).getText());
+                int assists = parseIntSafe(cols.get(7).getText());
+                double rating = parseDoubleSafe(
                     cols.size()>14 ? cols.get(14).getText()
                                    : cols.get(cols.size()-1).getText()
                 );
