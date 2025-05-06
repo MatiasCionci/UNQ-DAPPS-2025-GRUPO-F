@@ -1,36 +1,39 @@
+
 package com.dappstp.dappstp.service.Scraping;
 
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.apache.hc.client5.http.fluent.Executor;
+import org.apache.hc.client5.http.fluent.Request;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.util.Timeout;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.*;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
+import javax.net.ssl.*;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
 @Service
 @Slf4j
 public class ScraperServicePlayers {
 
-    private final PlayersRepository playerRepository;
-    private final Random random = new Random();
+    private static final String TARGET_URL = 
+        "https://www.whoscored.com/teams/65/show/spain-barcelona";
+    private static final String PROXY_USER = "90ce8794884d97bd268a162f69961e6cb08c827a";
+    private static final String PROXY_PASS = "";
+    private static final String PROXY_HOST = "api.zenrows.com";
+    private static final int    PROXY_PORT = 8001;
 
-    private static final List<String> USER_AGENTS = List.of(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19041"
-    );
+    private final PlayersRepository playerRepository;
 
     public ScraperServicePlayers(PlayersRepository playerRepository) {
         this.playerRepository = playerRepository;
@@ -38,89 +41,50 @@ public class ScraperServicePlayers {
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping con WebDriverManager y user‑agent rotativo...");
-        List<Players> players = new ArrayList<>();
-
-        // Setup driver manager
-        WebDriverManager.chromedriver().setup();
-        String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
-        log.debug("User‑Agent seleccionado: {}", ua);
-
-        // ChromeOptions with stealth tweaks
-        ChromeOptions options = new ChromeOptions();
-        options.setPageLoadStrategy(PageLoadStrategy.NONE);
-        options.addArguments(
-            "--headless=new",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--window-size=1920,1080",
-            "--user-agent=" + ua,
-            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
-        );
-        // prevent detection
-        options.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
-        options.setExperimentalOption("useAutomationExtension", false);
-
-        WebDriver driver = new ChromeDriver(options);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
-
         try {
-            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
-            log.info("Navegando a {}", url);
-            // hide webdriver property
-            ((JavascriptExecutor) driver).executeScript(
-                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-            );
-            driver.get(url);
-            String html = driver.getPageSource();
-            log.info("🔍 Fragmento de página (primeros 2000 chars):\n{}", 
-                     html.substring(0, Math.min(html.length(), 2000)));
-            // Close SweetAlert2 popup if appears
-            try {
-                WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("div.webpush-swal2-shown")
-                ));
-                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
-                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", closeBtn);
-                wait.until(ExpectedConditions.invisibilityOf(modal));
-                log.debug("🎉 Popup cerrado.");
-            } catch (Exception e) {
-                log.debug("No apareció popup de propaganda.");
-            }
+            ignoreCertWarning();
 
-            // Select "All" rows
-            try {
-                WebElement lengthSelect = wait.until(
-                    ExpectedConditions.elementToBeClickable(
-                        By.cssSelector("select[name='player-table-statistics_length']")
-                    )
-                );
-                new Select(lengthSelect).selectByVisibleText("All");
-            } catch (Exception e) {
-                log.warn("No se pudo cambiar número de filas: {}", e.getMessage());
-            }
+            // Proxy Basic Auth header
+            String userInfo = PROXY_USER + ":" + PROXY_PASS;
+            String basicAuth = Base64
+                .getEncoder()
+                .encodeToString(userInfo.getBytes(StandardCharsets.UTF_8));
 
-            // Wait and parse table rows
-            wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
-                By.cssSelector("tbody#player-table-statistics-body tr"), 1
-            ));
-            List<WebElement> rows = driver.findElements(
-                By.cssSelector("tbody#player-table-statistics-body tr")
-            );
-            log.info("🎯 Filas encontradas: {}", rows.size());
+            // Configure HTTP client with proxy
+            Executor exec = Executor.newInstance()
+                .authPreemptiveProxy(new HttpHost(PROXY_HOST, PROXY_PORT))
+                .auth(new HttpHost(PROXY_HOST, PROXY_PORT),
+                      PROXY_USER, PROXY_PASS.toCharArray());
 
-            for (WebElement row : rows) {
-                List<WebElement> cols = row.findElements(By.tagName("td"));
-                if (cols.isEmpty()) continue;
+            // Execute request via proxy
+            String html = exec.execute(Request.get(TARGET_URL)
+                    .viaProxy(new HttpHost(PROXY_HOST, PROXY_PORT))
+                    .addHeader("Proxy-Authorization", "Basic " + basicAuth)
+                    .connectTimeout(Timeout.ofSeconds(30))
+                    .responseTimeout(Timeout.ofSeconds(60))
+                )
+                .returnContent()
+                .asString();
+
+            log.info("🔍 HTML obtenido ({} bytes)", html.length());
+
+            // Parse with Jsoup
+            Document doc = Jsoup.parse(html);
+            Elements rows = doc.select("tbody#player-table-statistics-body tr");
+            List<Players> players = new ArrayList<>();
+
+            for (Element row : rows) {
+                Elements cols = row.select("td");
+                if (cols.size() < 5) continue;
+
                 String name    = extractName(cols.get(0));
-                String matches = cols.size()>4 ? cols.get(4).getText().trim() : "0";
-                int goals      = cols.size()>6 ? parseIntSafe(cols.get(6).getText()) : 0;
-                int assists    = cols.size()>7 ? parseIntSafe(cols.get(7).getText()) : 0;
-                double rating  = cols.size()>14
-                    ? parseDoubleSafe(cols.get(14).getText())
-                    : parseDoubleSafe(cols.get(cols.size()-1).getText());
+                String matches = cols.get(4).text();
+                int goals      = parseIntSafe(cols.get(6).text());
+                int assists    = parseIntSafe(cols.get(7).text());
+                double rating  = parseDoubleSafe(
+                    cols.size() > 14 ? cols.get(14).text()
+                                     : cols.last().text()
+                );
 
                 Players p = new Players();
                 p.setName(name);
@@ -137,49 +101,51 @@ public class ScraperServicePlayers {
             } else {
                 log.warn("⚠️ No se procesaron jugadores.");
             }
+            return players;
 
         } catch (Exception e) {
-            log.error("Error en scraping:", e);
-        } finally {
-            driver.quit();
+            log.error("Error en scraping con proxy:", e);
+            return List.of();
         }
-
-        return players;
     }
 
-    private String extractName(WebElement cell) {
+    private static void ignoreCertWarning() throws Exception {
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        TrustManager[] trustAll = new X509TrustManager[]{
+            new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() { return null; }
+                public void checkClientTrusted(X509Certificate[] c, String a) {}
+                public void checkServerTrusted(X509Certificate[] c, String a) {}
+            }
+        };
+        ctx.init(null, trustAll, null);
+        SSLContext.setDefault(ctx);
+    }
+
+    private String extractName(Element cell) {
         try {
-            WebElement span = cell.findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
-            String txt = span.getText().trim();
-            return txt.isEmpty()
-                ? cell.findElement(By.cssSelector("a.player-link")).getText().trim()
-                : txt;
-        } catch (NoSuchElementException e) {
-            String[] parts = cell.getText().split("\\R");
-            return parts.length>1 ? parts[1].trim() : parts[0].trim();
+            Element link = cell.selectFirst("a.player-link");
+            Element span = link.selectFirst("span.iconize-icon-left");
+            String txt = (span != null ? span.text() : "").trim();
+            return txt.isEmpty() ? link.text().trim() : txt;
+        } catch (Exception e) {
+            String[] parts = cell.text().split("\\R");
+            return parts.length > 1 ? parts[1].trim() : parts[0].trim();
         }
     }
 
     private int parseIntSafe(String txt) {
-        try {
-            String num = txt.replaceAll("[^\\d]", "");
-            return num.isEmpty() ? 0 : Integer.parseInt(num);
-        } catch (Exception e) {
-            return 0;
-        }
+        String n = txt.replaceAll("[^0-9]", "");
+        return n.isEmpty() ? 0 : Integer.parseInt(n);
     }
 
     private double parseDoubleSafe(String txt) {
-        try {
-            String clean = txt.replace(",", ".").replaceAll("[^\\d.]", "");
-            int i = clean.indexOf('.');
-            if (i>0) {
-                int j = clean.indexOf('.', i+1);
-                if (j>0) clean = clean.substring(0, j);
-            }
-            return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
-        } catch (Exception e) {
-            return 0.0;
+        String clean = txt.replace(",", ".").replaceAll("[^0-9.]", "");
+        int i = clean.indexOf('.');
+        if (i >= 0) {
+            int j = clean.indexOf('.', i+1);
+            if (j >= 0) clean = clean.substring(0, j);
         }
+        return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
     }
 }
