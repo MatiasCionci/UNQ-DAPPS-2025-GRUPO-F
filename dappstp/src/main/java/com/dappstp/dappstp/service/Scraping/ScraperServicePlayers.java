@@ -1,4 +1,3 @@
-
 package com.dappstp.dappstp.service.Scraping;
 
 import com.dappstp.dappstp.model.Players;
@@ -50,6 +49,9 @@ public class ScraperServicePlayers {
 
         ChromeOptions options = new ChromeOptions();
         options.setPageLoadStrategy(PageLoadStrategy.NONE);
+            
+        // Configuración del Proxy y SSL
+        String proxyUrl = "http://90ce8794884d97bd268a162f69961e6cb08c827a:@api.zenrows.com:8001";
         options.addArguments(
             "--headless=new",
             "--no-sandbox",
@@ -57,6 +59,8 @@ public class ScraperServicePlayers {
             "--disable-gpu",
             "--window-size=1920,1080",
             "--user-agent=" + ua,
+            "--proxy-server=" + proxyUrl,          // Añade el proxy
+            "--ignore-certificate-errors",          // Omite certificados SSL
             "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
         );
 
