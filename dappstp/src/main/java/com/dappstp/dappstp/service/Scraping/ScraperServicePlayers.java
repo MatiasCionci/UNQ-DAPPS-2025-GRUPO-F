@@ -2,69 +2,125 @@ package com.dappstp.dappstp.service.Scraping;
 
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.fluent.Executor;
-import org.apache.hc.client5.http.fluent.Request;
-import org.apache.hc.core5.http.HttpHost;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
-import javax.net.ssl.*;
-import java.net.URI;
-import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 @Service
 @Slf4j
 public class ScraperServicePlayers {
 
     private final PlayersRepository playerRepository;
+    private final Random random = new Random();
 
-    /** 
-     * Aquí ponés tu URI de proxy ZenRows, con tu API key como usuario:
-     *    http://APIKEY:@api.zenrows.com:8001
-     */
-    private static final String ZENROWS_PROXY_URI = "http://90ce8794884d97bd268a162f69961e6cb08c827a:@api.zenrows.com:8001";
-    /** URL a raspar */
-    private static final String TARGET_URL = "https://www.whoscored.com/teams/65/show/spain-barcelona";
+    private static final List<String> USER_AGENTS = List.of(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.183 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19041"
+    );
 
     public ScraperServicePlayers(PlayersRepository playerRepository) {
         this.playerRepository = playerRepository;
-        ignoreCertWarning();
     }
 
     @Transactional
     public List<Players> scrapeAndSavePlayers() {
+        log.info("🚀 Iniciando scraping con WebDriverManager y user-agent rotativo...");
         List<Players> players = new ArrayList<>();
-        try {
-            // 1) Descarga el HTML a través de ZenRows proxy
-            String html = fetchViaZenRows(TARGET_URL, ZENROWS_PROXY_URI);
-            log.info("🔍 Fragmento de página (primeros 2000 chars):\n{}",
-                     html.substring(0, Math.min(2000, html.length())));
 
-            // 2) Parseo con Jsoup
-            Document doc = Jsoup.parse(html);
-            Elements rows = doc.select("tbody#player-table-statistics-body tr");
+        // Setup driver
+        WebDriverManager.chromedriver().setup();
+        String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
+        log.debug("User‑Agent seleccionado: {}", ua);
+
+        ChromeOptions options = new ChromeOptions();
+        options.setPageLoadStrategy(PageLoadStrategy.NONE);
+        options.addArguments(
+            "--headless=new",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1920,1080",
+            "--user-agent=" + ua,
+            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
+        );
+
+        WebDriver driver = null;
+        try {
+            driver = new ChromeDriver(options);
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
+
+            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
+            log.info("Navegando a {}", url);
+            driver.get(url);
+
+            // 1) Cerrar propaganda SweetAlert2 si aparece
+            try {
+                WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("div.webpush-swal2-shown")
+                ));
+                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
+                closeBtn.click();
+                wait.until(ExpectedConditions.invisibilityOf(modal));
+                log.debug("🎉 Popup cerrado.");
+            } catch (TimeoutException | NoSuchElementException e) {
+                log.debug("No apareció popup de propaganda.");
+            }
+
+            // 2) Seleccionar "All" en el select de filas
+            try {
+                WebElement lengthSelect = wait.until(
+                    ExpectedConditions.elementToBeClickable(
+                        By.cssSelector("select[name='player-table-statistics_length']")
+                    )
+                );
+                new Select(lengthSelect).selectByVisibleText("All");
+                // esperar recarga de tabla
+                wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(
+                    By.cssSelector("tbody#player-table-statistics-body tr"), 20
+                ));
+                log.debug("✅ 'All' seleccionado, al menos 21 filas cargadas.");
+            } catch (Exception e) {
+                log.warn("No se pudo cambiar número de filas: {}", e.getMessage());
+            }
+
+            // 3) Esperar la tabla y leer todas las filas
+            WebElement table = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("player-table-statistics-body")
+            ));
+            List<WebElement> rows = table.findElements(By.tagName("tr"));
             log.info("🎯 Filas encontradas: {}", rows.size());
 
-            // 3) Extraer datos de cada fila
-            for (Element row : rows) {
-                Elements cols = row.select("td");
-                if (cols.size() < 5) continue;
-
-                String name = extractName(cols.get(0));
-                String matches = cols.get(4).text().trim();
-                int goals = parseIntSafe(cols.get(6).text());
-                int assists = parseIntSafe(cols.get(7).text());
-                double rating = parseDoubleSafe(
-                    cols.size() > 14 ? cols.get(14).text() : cols.last().text()
-                );
+            for (WebElement row : rows) {
+                List<WebElement> cols = row.findElements(By.tagName("td"));
+                if (cols.isEmpty()) {
+                    continue;
+                }
+                String name    = extractName(cols.get(0));
+                String matches = cols.size() > 4 ? cols.get(4).getText().trim() : "0";
+                int goals      = cols.size() > 6 ? parseIntSafe(cols.get(6).getText()) : 0;
+                int assists    = cols.size() > 7 ? parseIntSafe(cols.get(7).getText()) : 0;
+                double rating;
+                if (cols.size() > 14) {
+                    rating = parseDoubleSafe(cols.get(14).getText());
+                } else {
+                    rating = parseDoubleSafe(cols.get(cols.size() - 1).getText());
+                }
 
                 Players p = new Players();
                 p.setName(name);
@@ -75,7 +131,6 @@ public class ScraperServicePlayers {
                 players.add(p);
             }
 
-            // 4) Guardar en BD
             if (!players.isEmpty()) {
                 playerRepository.saveAll(players);
                 log.info("✅ {} jugadores guardados.", players.size());
@@ -85,76 +140,50 @@ public class ScraperServicePlayers {
 
         } catch (Exception e) {
             log.error("Error en scraping:", e);
+        } finally {
+            if (driver != null) {
+                driver.quit();
+            }
         }
+
         return players;
     }
 
-    /**  
-     * Realiza la petición GET al target URL usando ZenRows como proxy con autenticación.
-     */
-    private String fetchViaZenRows(String targetUrl, String proxyUriString) throws Exception {
-        URI proxyUri = new URI(proxyUriString);
-        // userInfo viene como "APIKEY:"
-        String[] userInfo = proxyUri.getUserInfo().split(":", 2);
-        String user = userInfo[0];
-        String pass = userInfo.length > 1 ? userInfo[1] : "";
-        String basicAuth = Base64.getEncoder()
-                                .encodeToString(proxyUri.getUserInfo().getBytes());
-
-        return Executor.newInstance()
-            .auth(new HttpHost(proxyUri.getHost(), proxyUri.getPort()), user, pass.toCharArray())
-            .authPreemptiveProxy(new HttpHost(proxyUri.getHost(), proxyUri.getPort()))
-            .execute(Request.get(targetUrl)
-                .addHeader("Proxy-Authorization", "Basic " + basicAuth)
-                .viaProxy(HttpHost.create(proxyUriString))
-            )
-            .returnContent()
-            .asString();
-    }
-
-    /**
-     * Ignora warnings de certificados SSL para que no reviente al conectar al proxy.
-     */
-    private static void ignoreCertWarning() {
-        TrustManager[] trustAllCerts = new X509TrustManager[]{ new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() { return null; }
-            public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-            public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-        } };
+    private String extractName(WebElement cell) {
         try {
-            SSLContext ctx = SSLContext.getInstance("SSL");
-            ctx.init(null, trustAllCerts, null);
-            SSLContext.setDefault(ctx);
-        } catch (Exception ignored) {}
-    }
-
-    // Métodos auxiliares de parseo
-
-    private String extractName(Element cell) {
-        try {
-            Element span = cell.selectFirst("a.player-link span.iconize-icon-left");
-            if (span != null && !span.text().isBlank()) {
-                return span.text().trim();
-            }
-            return cell.selectFirst("a.player-link").text().trim();
-        } catch (Exception e) {
-            String[] parts = cell.text().split("\\R");
+            WebElement span = cell.findElement(By.cssSelector("a.player-link span.iconize-icon-left"));
+            String txt = span.getText().trim();
+            return txt.isEmpty()
+                ? cell.findElement(By.cssSelector("a.player-link")).getText().trim()
+                : txt;
+        } catch (NoSuchElementException e) {
+            String[] parts = cell.getText().split("\\R");
             return parts.length > 1 ? parts[1].trim() : parts[0].trim();
         }
     }
 
     private int parseIntSafe(String txt) {
-        String num = txt.replaceAll("[^\\d]", "");
-        return num.isEmpty() ? 0 : Integer.parseInt(num);
+        try {
+            String num = txt.replaceAll("[^\\d]", "");
+            return num.isEmpty() ? 0 : Integer.parseInt(num);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private double parseDoubleSafe(String txt) {
-        String clean = txt.replace(",", ".").replaceAll("[^\\d.]", "");
-        int i = clean.indexOf('.');
-        if (i >= 0) {
-            int j = clean.indexOf('.', i + 1);
-            if (j >= 0) clean = clean.substring(0, j);
+        try {
+            String clean = txt.replace(",", ".").replaceAll("[^\\d.]", "");
+            int i = clean.indexOf('.');
+            if (i != -1) {
+                int j = clean.indexOf('.', i + 1);
+                if (j != -1) {
+                    clean = clean.substring(0, j);
+                }
+            }
+            return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
+        } catch (Exception e) {
+            return 0.0;
         }
-        return clean.isEmpty() ? 0.0 : Double.parseDouble(clean);
     }
 }
