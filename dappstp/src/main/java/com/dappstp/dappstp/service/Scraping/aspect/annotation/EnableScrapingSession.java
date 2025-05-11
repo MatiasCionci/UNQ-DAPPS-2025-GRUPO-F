@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.Scraping.aspect.annotation;
+package com.dappstp.dappstp.service.scraping.aspect.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

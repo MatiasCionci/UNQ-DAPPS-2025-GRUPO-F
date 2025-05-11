@@ -1,5 +1,9 @@
-package com.dappstp.dappstp.service.scraping.aspect;
+package com.dappstp.dappstp.aspect;
 
+import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
+import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.service.scraping.service.ScraperServicePlayers;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -11,10 +15,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
-
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
 
 import java.time.Duration;
 import java.util.List;

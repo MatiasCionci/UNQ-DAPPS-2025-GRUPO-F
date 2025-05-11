@@ -1,8 +1,8 @@
 
-package com.dappstp.dappstp.service.Scraping.service;
-import com.dappstp.dappstp.service.Scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.Scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.Scraping.aspect.context.ScrapingContextHolder;
+package com.dappstp.dappstp.service.scraping.service;
+import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
+import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
 import jakarta.transaction.Transactional;

@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.Scraping.aspect.context;
+package com.dappstp.dappstp.service.scraping.aspect.context;
 
 public class ScrapingContextHolder {
 

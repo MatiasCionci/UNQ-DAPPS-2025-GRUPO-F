@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.Scraping.aspect.context;
+package com.dappstp.dappstp.service.scraping.aspect.context;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
