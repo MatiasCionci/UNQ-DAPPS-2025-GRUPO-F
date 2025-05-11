@@ -1,69 +1,40 @@
-package com.dappstp.dappstp.service.Scraping;
 
+package com.dappstp.dappstp.service.Scraping.service;
+import com.dappstp.dappstp.service.Scraping.aspect.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.service.Scraping.aspect.context.ScrapingContext;
+import com.dappstp.dappstp.service.Scraping.aspect.context.ScrapingContextHolder;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 @Service
 @Slf4j
 public class ScraperServicePlayers {
 
     private final PlayersRepository playerRepository;
-    private final Random random = new Random();
-
-    private static final List<String> USER_AGENTS = List.of(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.183 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-        "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19041"
-    );
 
     public ScraperServicePlayers(PlayersRepository playerRepository) {
         this.playerRepository = playerRepository;
     }
 
     @Transactional
+    @EnableScrapingSession
     public List<Players> scrapeAndSavePlayers() {
-        log.info("🚀 Iniciando scraping con WebDriverManager y user-agent rotativo...");
+        log.info("🚀 Iniciando lógica de scraping para jugadores (WebDriver gestionado por AOP)...");
         List<Players> players = new ArrayList<>();
-
-        // Setup driver
-        WebDriverManager.chromedriver().setup();
-        String ua = USER_AGENTS.get(random.nextInt(USER_AGENTS.size()));
-        log.debug("User‑Agent seleccionado: {}", ua);
-
-        ChromeOptions options = new ChromeOptions();
-        options.setPageLoadStrategy(PageLoadStrategy.NONE);
-        options.addArguments(
-            "--headless=new",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--window-size=1920,1080",
-            "--user-agent=" + ua,
-            "--user-data-dir=/tmp/chrome-profile-" + UUID.randomUUID()
-        );
-
-        WebDriver driver = null;
         try {
-            driver = new ChromeDriver(options);
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(180));
+            ScrapingContext context = ScrapingContextHolder.getContext();
+            WebDriver driver = context.getDriver();
+            WebDriverWait wait = context.getWait();
 
             String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
             log.info("Navegando a {}", url);
@@ -139,13 +110,10 @@ public class ScraperServicePlayers {
             }
 
         } catch (Exception e) {
-            log.error("Error en scraping:", e);
-        } finally {
-            if (driver != null) {
-                driver.quit();
-            }
+            log.error("Error durante el proceso de scraping de jugadores: {}", e.getMessage(), e);
+            // La excepción será propagada y el @Around advice en WebDriverManagementAspect se encargará del driver.quit()
+            throw new RuntimeException("Fallo en el scraping de jugadores", e); // O manejarla como prefieras para no cortar el flujo si es parte de un proceso mayor
         }
-
         return players;
     }
 

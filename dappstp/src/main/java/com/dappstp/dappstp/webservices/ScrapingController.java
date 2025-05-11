@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.Players;
-import com.dappstp.dappstp.service.Scraping.ScraperServicePlayers;
+import com.dappstp.dappstp.service.Scraping.service.ScraperServicePlayers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
