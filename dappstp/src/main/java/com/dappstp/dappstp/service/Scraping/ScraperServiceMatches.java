@@ -20,6 +20,11 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.springframework.stereotype.Service;
+
+import com.dappstp.dappstp.model.MatchStatus;
+import com.dappstp.dappstp.model.UpcomingMatch;
+import com.dappstp.dappstp.repository.UpcomingMatchRepository;
+
 import jakarta.transaction.Transactional;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -28,9 +33,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 @Service
 public class ScraperServiceMatches {
-/**
- * 
- *     private final UpcomingMatchRepository repo;
+   private final UpcomingMatchRepository repo;
 
     public ScraperServiceMatches(UpcomingMatchRepository repo) {
         this.repo = repo;
@@ -127,9 +130,7 @@ public class ScraperServiceMatches {
 
         return matches;
     }
- * 
- * 
- */
+
 
 }
 
