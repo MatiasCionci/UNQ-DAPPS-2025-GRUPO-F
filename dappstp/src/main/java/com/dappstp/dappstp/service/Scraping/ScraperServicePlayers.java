@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.Scraping;
+package com.dappstp.dappstp.service.scraping;
 
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
