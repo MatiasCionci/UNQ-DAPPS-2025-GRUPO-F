@@ -21,6 +21,11 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.dappstp.dappstp.model.MatchStatus;
+import com.dappstp.dappstp.model.UpcomingMatch;
+import com.dappstp.dappstp.repository.UpcomingMatchRepository;
+
 import jakarta.transaction.Transactional;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -36,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ScraperServiceMatches {
+   private final UpcomingMatchRepository repo;
 
     private static final Logger log = LoggerFactory.getLogger(ScraperServiceMatches.class);
     private final UpcomingMatchRepository repo;
@@ -224,6 +230,8 @@ public class ScraperServiceMatches {
         }
         return matches;
     }
+
+
 }
 
 
