@@ -68,9 +68,14 @@ public class WebDriverManagementAspect {
             log.error("AOP: Error durante la ejecución del método de scraping: {}", e.getMessage(), e);
             throw e; // Re-throw la excepción para que el llamador original la maneje si es necesario
         } finally {
-            if (ScrapingContextHolder.getContext() != null && ScrapingContextHolder.getContext().getDriver() != null) {
+            // Es preferible verificar directamente la instancia del driver que se intentó crear.
+            if (driver != null) {
                 log.info("AOP: Cerrando WebDriver...");
-                ScrapingContextHolder.getContext().getDriver().quit();
+                try {
+                    driver.quit();
+                } catch (Exception e) {
+                    log.error("AOP: Error al intentar cerrar WebDriver: {}", e.getMessage(), e);
+                }
             }
             ScrapingContextHolder.clearContext();
             log.info("🏁 AOP: Sesión de scraping finalizada, WebDriver cerrado y contexto limpiado.");
