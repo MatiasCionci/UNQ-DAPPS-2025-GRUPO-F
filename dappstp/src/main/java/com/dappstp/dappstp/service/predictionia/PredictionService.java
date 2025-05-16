@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.prediction;
+package com.dappstp.dappstp.service.predictionia;
 
 import com.dappstp.dappstp.model.Prediction;
 import com.fasterxml.jackson.core.JsonProcessingException;

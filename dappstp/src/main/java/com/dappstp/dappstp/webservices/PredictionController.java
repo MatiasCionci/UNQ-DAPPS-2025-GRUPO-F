@@ -3,7 +3,8 @@ package com.dappstp.dappstp.webservices;
 
 
 import com.dappstp.dappstp.model.Prediction;
-import com.dappstp.dappstp.service.prediction.PredictionService;
+import com.dappstp.dappstp.service.predictionia.PredictionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;

@@ -13,12 +13,14 @@ import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.model.Prediction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.dappstp.dappstp.service.scraping.service.ScraperServicePlayers;
-import com.dappstp.dappstp.service.scraping.service.SimpleScorePredictionScraperService;
-import com.dappstp.dappstp.service.scraping.service.TeamCharacteristicsScraperService;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.dappstp.dappstp.service.prediction.PredictionService;
+import com.dappstp.dappstp.service.predictionia.PredictionService;
+import com.dappstp.dappstp.service.scraping.clfinal.ScraperServicePlayers;
+import com.dappstp.dappstp.service.scraping.clfinal.SimpleScorePredictionScraperService;
+import com.dappstp.dappstp.service.scraping.clfinal.TeamCharacteristicsScraperService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

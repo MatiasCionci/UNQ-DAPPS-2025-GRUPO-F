@@ -1,5 +1,5 @@
 
-package com.dappstp.dappstp.service.scraping.service;
+package com.dappstp.dappstp.service.scraping.clfinal;
 import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
@@ -35,8 +35,8 @@ public class ScraperServicePlayers {
             ScrapingContext context = ScrapingContextHolder.getContext();
             WebDriver driver = context.getDriver();
             WebDriverWait wait = context.getWait();
-
-            String url = "https://www.whoscored.com/teams/65/show/spain-barcelona";
+//https://www.whoscored.com/teams/65/show/spain-barcelona
+            String url = "https://es.whoscored.com/matches/1899310/playerstatistics/europa-champions-league-2024-2025-paris-saint-germain-inter";
             log.info("Navegando a {}", url);
             driver.get(url);
 

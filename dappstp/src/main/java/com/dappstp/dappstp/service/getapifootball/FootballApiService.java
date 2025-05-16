@@ -22,16 +22,16 @@ public class FootballApiService {
   
     private String apiKey="b8938d9693774b1c8c7e37fb9422ae02";
 
-    private final String apiUrl = "https://api.football-data.org/v4";
+    private final String apiUrl = "https://api.football-data.org/v4/";
 
     @Autowired
     public FootballApiService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
-
+//86 es real madrid,historial de partidos de un enfrentamiento real madrid atletico madrid https://api.football-data.org/v4/matches/498684/head2head
     public MatchesApiResponseDto getMatches() {
         String url = UriComponentsBuilder.fromHttpUrl(apiUrl)
-                .path("/matches")
+                .path("/teams/86/matches")
                 // Aquí podrías agregar parámetros de consulta si la API los soporta/requiere
                 // .queryParam("dateFrom", "YYYY-MM-DD")
                 // .queryParam("dateTo", "YYYY-MM-DD")
