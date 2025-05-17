@@ -22,7 +22,10 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Autowired private UserService userService;
-    @Autowired private JwtToken jwtToken;
+
+    
+    @Autowired// Hacemos la dependencia opcional
+    private JwtToken jwtToken;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)

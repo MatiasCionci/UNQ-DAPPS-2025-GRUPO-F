@@ -7,6 +7,9 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.swagger.v3.oas.models.OpenAPI; // Importar OpenAPI
+import io.swagger.v3.oas.models.info.Info;
+
 
 @Configuration("footballApiAppConfig")
 public class AppConfig {
@@ -21,5 +24,13 @@ public class AppConfig {
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
+    }
+     @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("DappSTP API")
+                        .version("v0.0.1")
+                        .description("API para predicciones deportivas y scraping de datos."));
     }
 }

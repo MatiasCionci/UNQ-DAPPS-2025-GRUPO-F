@@ -194,7 +194,11 @@
     		<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     		<version>2.5.0</version> <!-- O la versión estable más reciente -->
 		</dependency>
-
+			<dependency>
+    			<groupId>org.springdoc</groupId>
+    			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    			<version>2.5.0</version> <!-- Puedes verificar la última versión en Maven Central -->
+			</dependency>
   		<!-- Spring Security Crypto (ya incluido transitivamente por spring-boot-starter-security) -->
   		<!-- Puedes eliminar esta dependencia explícita si quieres -->
 	</dependencies>

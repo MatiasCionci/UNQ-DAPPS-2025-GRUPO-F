@@ -1,6 +1,7 @@
 package com.dappstp.dappstp.webservices;
 
 import com.dappstp.dappstp.model.Players;
+import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
 import com.dappstp.dappstp.service.PlayersService; // Ensure PlayersService is imported
 import lombok.extern.slf4j.Slf4j; // Para logging
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +10,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+
 import java.util.List;
 
 @RestController // Marca esta clase como un controlador REST
-@RequestMapping("/api/playersEntity") // Define la ruta base para este controlador
+@RequestMapping(ApiPaths.API_BASE + "/playersEntity") // Usando ApiPaths
+@Tag(name = "Players", description = "Endpoints para gestionar y consultar información de jugadores.")
 @Slf4j // Habilita el logging fácil con Lombok
 public class PlayerController {
 
@@ -25,6 +34,9 @@ public class PlayerController {
     }
 
     @GetMapping
+    @Operation(summary = "Obtener todos los jugadores",
+               description = "Devuelve una lista de todos los jugadores almacenados en la base de datos.")
+    @ApiResponse(responseCode = "200", description = "Lista de jugadores obtenida exitosamente.", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Players.class))))
     public ResponseEntity<List<Players>> getAllPlayers() {
         log.info("➡️ Endpoint /api/playersEntity invocado para obtener todos los jugadores.");
         try {
