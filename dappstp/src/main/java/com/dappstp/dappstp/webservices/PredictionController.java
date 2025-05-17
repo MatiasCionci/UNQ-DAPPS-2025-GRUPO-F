@@ -1,12 +1,17 @@
-
 package com.dappstp.dappstp.webservices;
-
-
 import com.dappstp.dappstp.model.Prediction;
+import com.dappstp.dappstp.service.PlayersService;
+import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.predictionia.PredictionService;
+import com.dappstp.dappstp.service.scraping.clfinal.CLFinalTeamStatsSummaryScraperService;
+import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
+import com.dappstp.dappstp.webservices.dto.ErrorResponse;
+import com.dappstp.dappstp.webservices.dto.PredictionRequest;
+import com.dappstp.dappstp.webservices.dto.PredictionResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,10 +21,23 @@ public class PredictionController {
 
     private static final Logger logger = LoggerFactory.getLogger(PredictionController.class);
     private final PredictionService predictionService;
+    private final FootballApiService footballApiService;
+    private final PlayersService playersService;
+    private final CLFinalTeamStatsSummaryScraperService clFinalScraperService;
+    private final ComprehensivePredictionInputService comprehensivePredictionInputService; // Nuevo servicio
 
     // Inyección por constructor (recomendado)
-    public PredictionController(PredictionService predictionService) {
+    @Autowired
+    public PredictionController(PredictionService predictionService,
+                                FootballApiService footballApiService,
+                                PlayersService playersService,
+                                CLFinalTeamStatsSummaryScraperService clFinalScraperService,
+                                ComprehensivePredictionInputService comprehensivePredictionInputService) { // Inyectar nuevo servicio
         this.predictionService = predictionService;
+        this.footballApiService = footballApiService;
+        this.playersService = playersService;
+        this.clFinalScraperService = clFinalScraperService;
+        this.comprehensivePredictionInputService = comprehensivePredictionInputService;
     }
 
     @PostMapping
@@ -53,46 +71,28 @@ public class PredictionController {
         }
     }
 
-    // Clases DTO para request/response
-    static class PredictionRequest {
-        private String matchId;
-        private String scrapedData;
+    @GetMapping("/generate-comprehensive")
+    public ResponseEntity<?> generateComprehensivePrediction() {
+        logger.info("Solicitud de predicción integral recibida.");
+        try {
+            // Delegar la recolección y formato de datos al nuevo servicio
+            String finalDataString = comprehensivePredictionInputService.aggregateDataForPrediction();
+            logger.debug("String de datos integral generado: {}", finalDataString);
 
-        // Getters y Setters
-        public String getMatchId() { return matchId; }
-        public void setMatchId(String matchId) { this.matchId = matchId; }
-        public String getScrapedData() { return scrapedData; }
-        public void setScrapedData(String scrapedData) { this.scrapedData = scrapedData; }
-    }
-
-    static class PredictionResponse {
-        private final Prediction prediction;
-        private final String status;
-        private final long timestamp;
-
-        public PredictionResponse(Prediction prediction, String status, long timestamp) {
-            this.prediction = prediction;
-            this.status = status;
-            this.timestamp = timestamp;
+            Prediction prediction = predictionService.analyzeMatch(finalDataString);
+            
+            return ResponseEntity.ok().body(
+                new PredictionResponse(
+                    prediction,
+                    "success",
+                    System.currentTimeMillis()
+                )
+            );
+        } catch (Exception e) {
+            logger.error("Error procesando solicitud de predicción integral: {}", e.getMessage(), e); // Añadimos 'e' para el stack trace en logs
+            return ResponseEntity.internalServerError().body(
+                new ErrorResponse("Error generando predicción integral: " + e.getMessage())
+            );
         }
-
-        // Getters
-        public Prediction getPrediction() { return prediction; }
-        public String getStatus() { return status; }
-        public long getTimestamp() { return timestamp; }
-    }
-
-    static class ErrorResponse {
-        private final String error;
-        private final long timestamp;
-
-        public ErrorResponse(String error) {
-            this.error = error;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        // Getters
-        public String getError() { return error; }
-        public long getTimestamp() { return timestamp; }
     }
 }

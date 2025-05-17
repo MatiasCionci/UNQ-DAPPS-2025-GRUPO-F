@@ -3,7 +3,6 @@ package com.dappstp.dappstp.service.getapifootball;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,9 +28,9 @@ public class FootballApiService {
         this.restTemplate = restTemplate;
     }
 //86 es real madrid,historial de partidos de un enfrentamiento real madrid atletico madrid https://api.football-data.org/v4/matches/498684/head2head
-    public MatchesApiResponseDto getMatches() {
+    public MatchesApiResponseDto getMatches(String id) {
         String url = UriComponentsBuilder.fromHttpUrl(apiUrl)
-                .path("/teams/86/matches")
+                .path("/teams/"+id+"/matches")
                 // Aquí podrías agregar parámetros de consulta si la API los soporta/requiere
                 // .queryParam("dateFrom", "YYYY-MM-DD")
                 // .queryParam("dateTo", "YYYY-MM-DD")

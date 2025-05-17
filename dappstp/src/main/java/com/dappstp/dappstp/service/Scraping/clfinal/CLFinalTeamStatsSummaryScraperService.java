@@ -15,9 +15,12 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -128,4 +131,42 @@ public class CLFinalTeamStatsSummaryScraperService {
             log.debug("Popup de cookie consent no apareció o no se pudo cerrar.");
         }
     }
+     @Transactional(readOnly = true)
+     public TeamStatsSummaryDto retrieveLatestTeamStatsSummaryFromDB() {
+        log.info("Intentando recuperar el último TeamStatsSummary desde la BD...");
+        Optional<TeamStatsSummaryEntity> entityOptional = statsSummaryRepository.findTopByOrderByIdDesc(); 
+
+        if (entityOptional.isPresent()) {
+            TeamStatsSummaryEntity entity = entityOptional.get();
+            log.info("Último TeamStatsSummaryEntity encontrado en la BD con ID: {}", entity.getId());
+            return convertEntityToDto(entity);
+        } else {
+            log.warn("No se encontró ningún TeamStatsSummaryEntity en la BD.");
+            return null; 
+        }
+    }
+
+    // Método ayudante para convertir la Entidad a DTO
+    private TeamStatsSummaryDto convertEntityToDto(TeamStatsSummaryEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        TeamStatsSummaryDto dto = new TeamStatsSummaryDto();
+        dto.setHomeTeamEmblemUrl(entity.getHomeTeamEmblemUrl());
+        dto.setHomeMatchesPlayed(entity.getHomeMatchesPlayed());
+        dto.setAwayTeamEmblemUrl(entity.getAwayTeamEmblemUrl());
+        dto.setAwayMatchesPlayed(entity.getAwayMatchesPlayed());
+        if (entity.getStats() != null) { // Usamos getStats() que es generado por Lombok
+            List<StatDetailDto> statDetailsDtoList = entity.getStats().stream()
+                .map(statEntity -> new StatDetailDto(statEntity.getLabel(), statEntity.getHomeValue(), statEntity.getAwayValue()))
+                .collect(Collectors.toList());
+            dto.setStats(statDetailsDtoList);
+        } else {
+            dto.setStats(new ArrayList<>());
+        }
+        return dto;
+    }
 }
+    // Método ayudante para convertir la Entidad a DTO
+  
+

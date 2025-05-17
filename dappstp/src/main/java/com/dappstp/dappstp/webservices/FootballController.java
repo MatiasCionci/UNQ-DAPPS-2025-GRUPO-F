@@ -22,7 +22,7 @@ public class FootballController {
 
     @GetMapping("/matches")
     public ResponseEntity<MatchesApiResponseDto> getAllMatches() {
-        MatchesApiResponseDto matchesResponse = footballApiService.getMatches();
+        MatchesApiResponseDto matchesResponse = footballApiService.getMatches("108");
 
         if (matchesResponse != null && matchesResponse.getMatches() != null && !matchesResponse.getMatches().isEmpty()) {
             return ResponseEntity.ok(matchesResponse);
