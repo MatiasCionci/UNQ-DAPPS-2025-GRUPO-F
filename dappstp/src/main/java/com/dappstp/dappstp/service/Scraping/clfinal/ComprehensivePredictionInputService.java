@@ -1,10 +1,15 @@
 package com.dappstp.dappstp.service.scraping.clfinal;
 
 
+import com.dappstp.dappstp.model.Prediction;
+import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.model.Players;
+
 import com.dappstp.dappstp.service.PlayersService;
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
+import com.dappstp.dappstp.repository.PredictionLogRepository;
+import com.dappstp.dappstp.service.predictionia.PredictionService; // Necesario para llamar a analyzeMatch
 import com.dappstp.dappstp.service.scraping.clfinal.CLFinalTeamStatsSummaryScraperService;
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 import org.slf4j.Logger;
@@ -12,9 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime; // Para el nuevo método de historial
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper; // Para convertir Prediction a JSON
 
 @Service
 public class ComprehensivePredictionInputService {
@@ -24,14 +31,23 @@ public class ComprehensivePredictionInputService {
     private final FootballApiService footballApiService;
     private final PlayersService playersService;
     private final CLFinalTeamStatsSummaryScraperService clFinalScraperService;
+    private final PredictionService predictionService; // Añadido para llamar a analyzeMatch
+    private final PredictionLogRepository predictionLogRepository; // Para guardar logs
+    private final ObjectMapper objectMapper; // Para serializar Prediction a JSON
 
     @Autowired
     public ComprehensivePredictionInputService(FootballApiService footballApiService,
                                              PlayersService playersService,
-                                             CLFinalTeamStatsSummaryScraperService clFinalScraperService) {
+                                             CLFinalTeamStatsSummaryScraperService clFinalScraperService,
+                                             PredictionService predictionService,
+                                             PredictionLogRepository predictionLogRepository,
+                                             ObjectMapper objectMapper) {
         this.footballApiService = footballApiService;
         this.playersService = playersService;
         this.clFinalScraperService = clFinalScraperService;
+        this.predictionService = predictionService;
+        this.predictionLogRepository = predictionLogRepository;
+        this.objectMapper = objectMapper;
     }
 
     public String aggregateDataForPrediction() {
@@ -79,5 +95,32 @@ public class ComprehensivePredictionInputService {
 
         logger.info("Datos agregados exitosamente.");
         return comprehensiveData.toString();
+    }
+
+    // Método para generar la predicción y guardar el log
+    public Prediction generateAndLogComprehensivePrediction() {
+        String inputData = aggregateDataForPrediction();
+        Prediction prediction = predictionService.analyzeMatch(inputData);
+
+        try {
+            String predictionJson = objectMapper.writeValueAsString(prediction);
+            PredictionLog logEntry = new PredictionLog(inputData, predictionJson, "COMPREHENSIVE");
+            predictionLogRepository.save(logEntry);
+            logger.info("Predicción integral registrada con ID de log: {}", logEntry.getId());
+        } catch (Exception e) {
+            logger.error("Error al registrar la predicción integral: {}", e.getMessage(), e);
+            // Decidir si relanzar la excepción o solo loguear
+        }
+        return prediction;
+    }
+
+    // Nuevo método para obtener el historial de predicciones
+    public List<PredictionLog> getPredictionHistory(LocalDateTime startDate, LocalDateTime endDate) {
+        logger.info("Consultando historial de predicciones desde {} hasta {}", startDate, endDate);
+        // Asegurarse de que endDate sea el final del día si solo se pasa una fecha
+        if (startDate.toLocalDate().equals(endDate.toLocalDate())) {
+            endDate = endDate.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        }
+        return predictionLogRepository.findByCreatedAtBetween(startDate, endDate);
     }
 }
