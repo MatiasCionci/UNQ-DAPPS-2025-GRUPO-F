@@ -31,12 +31,13 @@ jobs:
         # Esto incluye compilar, ejecutar tests (JUnit, etc.), y si tu pom.xml
         # tiene JaCoCo configurado para la fase 'prepare-package' o 'verify' (como es común),
         # generará el informe de cobertura.
-        # El flag -B es para "batch mode", útil para CI.
+        working-directory: ./dappstp
         run: mvn -B verify --file pom.xml
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report # Nombre del artefacto que se subirá
-          path: target/site/jacoco/ # Ruta donde JaCoCo genera el informe HTML
+          # La ruta es relativa al GITHUB_WORKSPACE (raíz del repositorio)
+          path: dappstp/target/site/jacoco/ 
           if-no-files-found: error # Falla el paso si no se encuentra el reporte (indica un problema)
