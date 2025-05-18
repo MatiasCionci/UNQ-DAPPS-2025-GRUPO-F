@@ -1,11 +1,7 @@
 package com.dappstp.dappstp.webservices;
 import com.dappstp.dappstp.model.Prediction;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
-// Corregido el import si PredictionLog está en model
-import com.dappstp.dappstp.service.PlayersService;
-import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.predictionia.PredictionService;
-import com.dappstp.dappstp.service.scraping.clfinal.CLFinalTeamStatsSummaryScraperService;
 import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
 import com.dappstp.dappstp.webservices.dto.ErrorResponse;
 import com.dappstp.dappstp.webservices.dto.PredictionRequest;
@@ -36,22 +32,14 @@ public class PredictionController {
 
     private static final Logger logger = LoggerFactory.getLogger(PredictionController.class);
     private final PredictionService predictionService;
-    private final FootballApiService footballApiService;
-    private final PlayersService playersService;
-    private final CLFinalTeamStatsSummaryScraperService clFinalScraperService;
+
     private final ComprehensivePredictionInputService comprehensivePredictionInputService; // Nuevo servicio
 
     // Inyección por constructor (recomendado)
     @Autowired
-    public PredictionController(PredictionService predictionService,
-                                FootballApiService footballApiService,
-                                PlayersService playersService,
-                                CLFinalTeamStatsSummaryScraperService clFinalScraperService,
+    public PredictionController(PredictionService predictionService,                              
                                 ComprehensivePredictionInputService comprehensivePredictionInputService) { // Inyectar nuevo servicio
         this.predictionService = predictionService;
-        this.footballApiService = footballApiService;
-        this.playersService = playersService;
-        this.clFinalScraperService = clFinalScraperService;
         this.comprehensivePredictionInputService = comprehensivePredictionInputService;
     }
 

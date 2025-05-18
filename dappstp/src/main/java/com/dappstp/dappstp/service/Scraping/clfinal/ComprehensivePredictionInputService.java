@@ -10,7 +10,6 @@ import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
 import com.dappstp.dappstp.repository.PredictionLogRepository;
 import com.dappstp.dappstp.service.predictionia.PredictionService; // Necesario para llamar a analyzeMatch
-import com.dappstp.dappstp.service.scraping.clfinal.CLFinalTeamStatsSummaryScraperService;
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

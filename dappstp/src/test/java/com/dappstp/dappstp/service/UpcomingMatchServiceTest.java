@@ -1,21 +1,14 @@
 package com.dappstp.dappstp.service;
-
-import java.util.List;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.dappstp.dappstp.factory.UpcomingMatchFactory;
 import com.dappstp.dappstp.model.Team;
-import com.dappstp.dappstp.model.UpcomingMatch;
 import com.dappstp.dappstp.repository.TeamRepository;
 import com.dappstp.dappstp.service.impl.MatchServiceImpl;
 import com.dappstp.dappstp.service.scraping.ScraperServiceMatches;

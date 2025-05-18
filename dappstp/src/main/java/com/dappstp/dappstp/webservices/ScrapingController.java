@@ -1,14 +1,11 @@
 package com.dappstp.dappstp.webservices; // Asegúrate que el paquete sea correcto para tu estructura
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.Players;
 import org.springframework.http.HttpStatus;
-
-import com.dappstp.dappstp.service.predictionia.PredictionService;
 import com.dappstp.dappstp.service.scraping.clfinal.ScraperServicePlayers;
 import com.dappstp.dappstp.service.scraping.clfinal.SimpleScorePredictionScraperService;
 import com.dappstp.dappstp.service.scraping.clfinal.TeamCharacteristicsScraperService;
@@ -34,19 +31,18 @@ public class ScrapingController {
     private final SimpleScorePredictionScraperService scorePredictionScraperService;
     // completo de prediccion,dice los sucesos del partido
     private final TeamCharacteristicsScraperService teamCharacteristicsScraperService;
-    //prompt de dice la prediccion
-    private final PredictionService predictionService;
+    
 
 
     private static final Logger logger = LoggerFactory.getLogger(ScrapingController.class);
 
     // Inyección de dependencias vía constructor para ambos servicios
-    @Autowired
+   // @Autowired
     public ScrapingController(ScraperServicePlayers scraperService,
                               SimpleScorePredictionScraperService scorePredictionScraperService,
-                              TeamCharacteristicsScraperService teamCharacteristicsScraperService,
-                              PredictionService predictionService) {
-        this.predictionService = predictionService;
+                              TeamCharacteristicsScraperService teamCharacteristicsScraperService
+                            ) {
+     
         this.teamCharacteristicsScraperService = teamCharacteristicsScraperService;
         this.scorePredictionScraperService = scorePredictionScraperService;
  
