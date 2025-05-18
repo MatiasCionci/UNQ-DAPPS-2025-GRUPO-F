@@ -1,0 +1,42 @@
+name: Java CI, Test & Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_test_and_coverage:
+    name: Build, Test and Generate Coverage
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Permiso para leer el repositorio (checkout)
+      # Si en el futuro quieres integrar con SonarCloud o Codecov, podrías necesitar más permisos o tokens.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven' # Cachea las dependencias de Maven para builds más rápidos
+
+      - name: Build, Test and Generate Coverage Report with Maven
+        # El comando 'verify' de Maven ejecutará el ciclo de vida hasta la fase 'verify'.
+        # Esto incluye compilar, ejecutar tests (JUnit, etc.), y si tu pom.xml
+        # tiene JaCoCo configurado para la fase 'prepare-package' o 'verify' (como es común),
+        # generará el informe de cobertura.
+        # El flag -B es para "batch mode", útil para CI.
+        run: mvn -B verify --file pom.xml
+
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report # Nombre del artefacto que se subirá
+          path: target/site/jacoco/ # Ruta donde JaCoCo genera el informe HTML
+          if-no-files-found: error # Falla el paso si no se encuentra el reporte (indica un problema)
