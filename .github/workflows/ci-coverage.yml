@@ -31,6 +31,8 @@ jobs:
         # Esto incluye compilar, ejecutar tests (JUnit, etc.), y si tu pom.xml
         # tiene JaCoCo configurado para la fase 'prepare-package' o 'verify' (como es común),
         # generará el informe de cobertura.
+        env:
+          RUN_E2E_FOOTBALL_API_TESTS: true # Aquí configuras la variable de entorno
         working-directory: ./dappstp
         run: mvn -B verify --file pom.xml
 
