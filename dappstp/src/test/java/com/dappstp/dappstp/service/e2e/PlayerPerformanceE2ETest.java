@@ -8,7 +8,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,24 +16,22 @@ import org.springframework.http.ResponseEntity;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
 
-@SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @EnabledIfEnvironmentVariable(named = "RUN_E2E_PERFORMANCE_TESTS", matches = "true")
 public class PlayerPerformanceE2ETest {
+
     private static final Logger log = LoggerFactory.getLogger(PlayerPerformanceE2ETest.class);
 
     @LocalServerPort
-    int port;
+    private int port;
 
     @Autowired
-    TestRestTemplate rest;
+    private TestRestTemplate rest;
 
     @Autowired
-    PlayersRepository repo;
+    private PlayersRepository repo;
 
     private Long playerId;
-
-     private Players player;
 
     @BeforeEach
     void setUp() {
@@ -42,9 +39,9 @@ public class PlayerPerformanceE2ETest {
         Players player = new Players(
             "Test Player",   // name
             "20(0)",         // matches
-            10,               // goals
-            5,                // assists
-            7.5               // rating
+            10,              // goals
+            5,               // assists
+            7.5              // rating
         );
         player = repo.save(player);
         playerId = player.getId();
