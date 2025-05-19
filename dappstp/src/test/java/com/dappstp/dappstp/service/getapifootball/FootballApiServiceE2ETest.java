@@ -20,18 +20,7 @@ class FootballApiServiceE2ETest {
     @Autowired
     private FootballApiService footballApiService;
 
-    // Para que este test funcione, necesitas un bean de RestTemplate configurado en tu aplicación.
-    // Si no lo tienes, puedes añadir una configuración como esta en una clase @Configuration:
-    // @Bean
-    // public RestTemplate restTemplate() {
-    //     return new RestTemplate();
-    // }
-    // O asegurarte de que FootballApiService lo reciba correctamente.
-
     @Test
-    // Opcional: Ejecutar este test solo si una variable de entorno específica está presente,
-    // para evitar ejecutarlo siempre y consumir cuota de API.
-    // Por ejemplo, podrías configurar RUN_E2E_FOOTBALL_API_TESTS=true en tu entorno de CI.
     @EnabledIfEnvironmentVariable(named = "RUN_E2E_FOOTBALL_API_TESTS", matches = "true")
     void getMatches_forRealMadrid_shouldReturnMatches() {
         // Arrange
