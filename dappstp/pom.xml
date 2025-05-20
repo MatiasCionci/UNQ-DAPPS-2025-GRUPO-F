@@ -7,7 +7,7 @@
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<!-- Asegúrate que esta versión de Spring Boot sea compatible con Java 21 y Selenium 4.31 -->
 		<!-- Si tienes problemas, podrías probar una versión más reciente de Spring Boot como 3.2.x o 3.3.x -->
-		<version>3.4.4</version>
+		<version>3.3.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.dappstp</groupId>
@@ -101,6 +101,26 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		 <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.10.2</version> <!-- O la versión más reciente que estés usando -->
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.10.2</version> <!-- O la versión más reciente que estés usando -->
+      <scope>test</scope>
+    </dependency>
+  
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+		
 
 		<!-- Dependencias de Scraping (Jsoup, Selenium) -->
 		<!-- Estas parecen ser de Scala (zio, tarantula), ¿las usas realmente con Java/Selenium? -->
@@ -128,19 +148,10 @@
   <artifactId>jsoup</artifactId>
   <version>1.15.4</version>
 </dependency>
-		<!-- Apache HttpClient Fluent API -->
-<dependency>
-  <groupId>org.apache.httpcomponents.client5</groupId>
-  <artifactId>httpclient5-fluent</artifactId>
-  <version>5.4.3</version>
-</dependency>
+
 
 <!-- Jsoup para parseo HTML -->
-<dependency>
-  <groupId>org.jsoup</groupId>
-  <artifactId>jsoup</artifactId>
-  <version>1.15.4</version>
-</dependency>
+
 
 		<dependency>
      		<groupId>com.propensive</groupId>
@@ -194,11 +205,7 @@
     		<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     		<version>2.5.0</version> <!-- O la versión estable más reciente -->
 		</dependency>
-			<dependency>
-    			<groupId>org.springdoc</groupId>
-    			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-    			<version>2.5.0</version> <!-- Puedes verificar la última versión en Maven Central -->
-			</dependency>
+		
   		<!-- Spring Security Crypto (ya incluido transitivamente por spring-boot-starter-security) -->
   		<!-- Puedes eliminar esta dependencia explícita si quieres -->
 	</dependencies>
