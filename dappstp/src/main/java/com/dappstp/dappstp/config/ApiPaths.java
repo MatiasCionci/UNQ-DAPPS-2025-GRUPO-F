@@ -4,6 +4,8 @@ public final class ApiPaths {
 
     private ApiPaths() {
         // Clase de utilidad, no instanciable
+                throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+
     }
 
     public static final String API_BASE = "/api";
