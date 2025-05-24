@@ -36,4 +36,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           # Eliminamos la parte 'org.sonarsource.scanner.maven:sonar-maven-plugin:sonar' y los -Dsonar.*
-          mvn -B verify verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Pcoverage
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Pcoverage -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }} -Dsonar.projectKey=dappstp-dappstp -Dsonar.projectName=dappstp-dappstp -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main/java -Dsonar.tests=src/test/java -Dsonar.java.binaries=target/classes
