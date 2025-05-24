@@ -36,4 +36,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           # Eliminamos la parte 'org.sonarsource.scanner.maven:sonar-maven-plugin:sonar' y los -Dsonar.*
-          mvn -B verify
+          mvn -B verify verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Pcoverage
