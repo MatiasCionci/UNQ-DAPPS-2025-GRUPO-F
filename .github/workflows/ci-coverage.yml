@@ -34,7 +34,8 @@ jobs:
         env:
           RUN_E2E_FOOTBALL_API_TESTS: true # Aquí configuras la variable de entorno
         working-directory: ./dappstp
-        run: mvn -B verify --file pom.xml
+        # Activate the 'coverage' profile to ensure JaCoCo runs
+        run: mvn -B verify -Pcoverage --file pom.xml
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
