@@ -21,8 +21,8 @@ public class FootballApiService {
     @Value("${FOOTBALL_API_KEY}")
     private String apiKey;
   
-    @Value("${FOOTBALL_API_KEY}")
-    private String apiUrl;
+  
+    private String apiUrl="https://api.football-data.org/v4";
 
     @Autowired
     public FootballApiService(RestTemplate restTemplate) {
