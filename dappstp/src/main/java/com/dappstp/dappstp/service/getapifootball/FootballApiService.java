@@ -3,6 +3,7 @@ package com.dappstp.dappstp.service.getapifootball;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -17,11 +18,11 @@ public class FootballApiService {
 
     private static final Logger logger = LoggerFactory.getLogger(FootballApiService.class);
     private final RestTemplate restTemplate;
-
+    @Value("${FOOTBALL_API_KEY}")
+    private String apiKey;
   
-    private String apiKey="b8938d9693774b1c8c7e37fb9422ae02";
-
-    private final String apiUrl = "https://api.football-data.org/v4/";
+    @Value("${FOOTBALL_API_KEY}")
+    private String apiUrl;
 
     @Autowired
     public FootballApiService(RestTemplate restTemplate) {
