@@ -100,6 +100,7 @@ public class ScrapingController {
         }
         
     }
+    //realmadrid getafe
      @GetMapping("/teamcharacteristics")
     @Operation(summary = "Scrapear características de equipos",
                description = "Realiza scraping de las características (fortalezas/debilidades) de los equipos desde una URL predefinida de WhoScored.")

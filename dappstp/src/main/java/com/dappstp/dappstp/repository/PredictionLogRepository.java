@@ -14,4 +14,6 @@ public interface PredictionLogRepository extends JpaRepository<PredictionLog, Lo
     // Método para buscar logs entre dos fechas
     List<PredictionLog> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
+    // Nuevo método para buscar logs por tipo y entre dos fechas
+    List<PredictionLog> findByPredictionTypeAndCreatedAtBetween(String predictionType, LocalDateTime startDate, LocalDateTime endDate);
 }

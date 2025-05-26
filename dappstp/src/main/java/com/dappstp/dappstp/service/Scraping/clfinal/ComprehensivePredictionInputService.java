@@ -15,7 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime; // Para el nuevo método de historial
 import java.util.List;
 import java.util.Optional;
@@ -50,47 +54,115 @@ public class ComprehensivePredictionInputService {
     }
 
     public String aggregateDataForPrediction() {
-        logger.info("Agregando datos para la predicción integral...");
+        logger.info("Agregando datos para la predicción integral en paralelo...");
         StringBuilder comprehensiveData = new StringBuilder();
+ // Se crea un pool de 4 hilos. Considera inyectar un ExecutorService gestionado por Spring
+        // si esta operación se realiza con mucha frecuencia para mejor gestión de recursos.
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        Future<MatchesApiResponseDto> interMatchesFuture = executor.submit(() -> {
+            logger.debug("Obteniendo partidos del Inter (ID 108) en hilo separado...");
+            return footballApiService.getMatches("108");
+        });
+
+        Future<MatchesApiResponseDto> psgMatchesFuture = executor.submit(() -> {
+            logger.debug("Obteniendo partidos del PSG (ID 524) en hilo separado...");
+            return footballApiService.getMatches("524");
+        });
+
+        Future<List<Players>> playersListFuture = executor.submit(() -> {
+            logger.debug("Obteniendo todos los jugadores en hilo separado...");
+            return playersService.findAllPlayers();
+        });
+
+        Future<TeamStatsSummaryDto> clFinalStatsFuture = executor.submit(() -> {
+            logger.debug("Obteniendo estadísticas de la final de la CL desde la BD en hilo separado...");
+            return clFinalScraperService.retrieveLatestTeamStatsSummaryFromDB();
+        });
+
+        try {
+            // 1. Partidos del Inter
+            MatchesApiResponseDto interMatches = null;
+            try {
+                interMatches = interMatchesFuture.get(); // Espera a que la tarea termine
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Obtención de partidos del Inter interrumpida", e);
+            } catch (ExecutionException e) {
+                logger.error("Error al obtener partidos del Inter", e.getCause());
+            }
+            comprehensiveData.append("INTER_MATCHES_START\n");
+            comprehensiveData.append(Optional.ofNullable(interMatches).map(Object::toString).orElse("DATOS_INTER_NO_DISPONIBLES"));
+            comprehensiveData.append("\nINTER_MATCHES_END\n\n");
+
+            // 2. Partidos del PSG
+            MatchesApiResponseDto psgMatches = null;
+            try {
+                psgMatches = psgMatchesFuture.get(); // Espera a que la tarea termine
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Obtención de partidos del PSG interrumpida", e);
+            } catch (ExecutionException e) {
+                logger.error("Error al obtener partidos del PSG", e.getCause());
+            }
+            comprehensiveData.append("PSG_MATCHES_START\n");
+            comprehensiveData.append(Optional.ofNullable(psgMatches).map(Object::toString).orElse("DATOS_PSG_NO_DISPONIBLES"));
+            comprehensiveData.append("\nPSG_MATCHES_END\n\n");
+
+            // 3. Todos los jugadores
+            List<Players> playersList = null;
+            try {
+                playersList = playersListFuture.get(); // Espera a que la tarea termine
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Obtención de lista de jugadores interrumpida", e);
+            } catch (ExecutionException e) {
+                logger.error("Error al obtener lista de jugadores", e.getCause());
+            }
+            String playersString = "JUGADORES_NO_DISPONIBLES";
+            if (playersList != null && !playersList.isEmpty()) {
+                playersString = playersList.stream()
+                    .map(p -> String.format("Jugador{nombre=%s, partidos=%s, goles=%s, asistencias=%s, rating=%s}",
+                                            p.getName(),
+                                            String.valueOf(p.getMatches()),
+                                            String.valueOf(p.getGoals()),
+                                            String.valueOf(p.getAssists()),
+                                            String.valueOf(p.getRating())))
+                    .collect(Collectors.joining("; "));
+            }
+            comprehensiveData.append("ALL_PLAYERS_START\n");
+            comprehensiveData.append(playersString);
+            comprehensiveData.append("\nALL_PLAYERS_END\n\n");
+
+            // 4. Estadísticas de la Final de la CL
+            TeamStatsSummaryDto clFinalStats = null;
+            try {
+                clFinalStats = clFinalStatsFuture.get(); // Espera a que la tarea termine
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Obtención de estadísticas de la CL interrumpida", e);
+            } catch (ExecutionException e) {
+                logger.error("Error al obtener estadísticas de la CL", e.getCause());
+            }
+            comprehensiveData.append("CL_FINAL_STATS_START\n");
+            comprehensiveData.append(Optional.ofNullable(clFinalStats).map(Object::toString).orElse("STATS_CL_FINAL_NO_DISPONIBLES"));
+            comprehensiveData.append("\nCL_FINAL_STATS_END\n");
+
+        } finally {
+            executor.shutdown(); // Inicia el apagado ordenado del executor
+            try {
+                // Espera un tiempo para que las tareas terminen
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow(); // Cancela las tareas que no hayan terminado
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
 
         // 1. Partidos del Inter
-        logger.debug("Obteniendo partidos del Inter (ID 108)...");
-        MatchesApiResponseDto interMatches = footballApiService.getMatches("108");
-        comprehensiveData.append("INTER_MATCHES_START\n");
-        comprehensiveData.append(Optional.ofNullable(interMatches).map(Object::toString).orElse("DATOS_INTER_NO_DISPONIBLES"));
-        comprehensiveData.append("\nINTER_MATCHES_END\n\n");
-
-        // 2. Partidos del PSG
-        logger.debug("Obteniendo partidos del PSG (ID 524)...");
-        MatchesApiResponseDto psgMatches = footballApiService.getMatches("524");
-        comprehensiveData.append("PSG_MATCHES_START\n");
-        comprehensiveData.append(Optional.ofNullable(psgMatches).map(Object::toString).orElse("DATOS_PSG_NO_DISPONIBLES"));
-        comprehensiveData.append("\nPSG_MATCHES_END\n\n");
-
-        // 3. Todos los jugadores
-        logger.debug("Obteniendo todos los jugadores...");
-        List<Players> playersList = playersService.findAllPlayers();
-        String playersString = "JUGADORES_NO_DISPONIBLES";
-        if (playersList != null && !playersList.isEmpty()) {
-            playersString = playersList.stream()
-                .map(p -> String.format("Jugador{nombre=%s, partidos=%s, goles=%s, asistencias=%s, rating=%s}",
-                                        p.getName(),
-                                        String.valueOf(p.getMatches()),
-                                        String.valueOf(p.getGoals()),
-                                        String.valueOf(p.getAssists()),
-                                        String.valueOf(p.getRating())))
-                .collect(Collectors.joining("; "));
-        }
-        comprehensiveData.append("ALL_PLAYERS_START\n");
-        comprehensiveData.append(playersString);
-        comprehensiveData.append("\nALL_PLAYERS_END\n\n");
-
-        // 4. Estadísticas de la Final de la CL
-        logger.debug("Intentando obtener las últimas estadísticas guardadas de la final de la CL desde la BD...");
-        TeamStatsSummaryDto clFinalStats = clFinalScraperService.retrieveLatestTeamStatsSummaryFromDB();
-        comprehensiveData.append("CL_FINAL_STATS_START\n");
-        comprehensiveData.append(Optional.ofNullable(clFinalStats).map(Object::toString).orElse("STATS_CL_FINAL_NO_DISPONIBLES"));
-        comprehensiveData.append("\nCL_FINAL_STATS_END\n");
+   
 
         logger.info("Datos agregados exitosamente.");
         return comprehensiveData.toString();
@@ -121,5 +193,13 @@ public class ComprehensivePredictionInputService {
             endDate = endDate.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         }
         return predictionLogRepository.findByCreatedAtBetween(startDate, endDate);
+    }
+    public List<PredictionLog> getPlayerSearchHistory(LocalDateTime startDate, LocalDateTime endDate) {
+    logger.info("Consultando historial de búsqueda de jugadores desde {} hasta {}", startDate, endDate);
+    // Asegurarse de que endDate sea el final del día si solo se pasa una fecha
+    if (startDate.toLocalDate().equals(endDate.toLocalDate())) {
+        endDate = endDate.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+    }
+    return predictionLogRepository.findByPredictionTypeAndCreatedAtBetween("PLAYER_SEARCH", startDate, endDate);
     }
 }
