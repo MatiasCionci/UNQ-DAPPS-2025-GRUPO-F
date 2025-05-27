@@ -59,12 +59,6 @@ public class TestDataInitializer implements CommandLineRunner {
         }
 
         // 2. Crear algunos jugadores de prueba si no existen
-        if (playersRepository.count() == 0) {
-            Players player1 = new Players("Lionel Messi", "35", 30, 20, 9.5f);
-            Players player2 = new Players("Cristiano Ronaldo", "30", 40, 10, 9.3f);
-            playersRepository.saveAll(List.of(player1, player2));
-            logger.info("Jugadores de prueba creados.");
-        }
 
         // 3. Crear un log de predicción de prueba
         if (predictionLogRepository.count() == 0) {
