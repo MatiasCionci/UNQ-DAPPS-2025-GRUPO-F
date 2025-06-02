@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Appender para la consola (opcional, para ver logs generales) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender para el archivo de auditoría -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Nombre y ubicación del archivo de log de auditoría -->
+        <file>logs/audit.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Rollover diario -->
+            <fileNamePattern>logs/audit.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- Mantener historial de 30 días -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <!-- El mensaje ya está formateado en el código Java, así que solo imprimimos el mensaje. -->
+            <!-- El formato del mensaje será: <timestamp,user,operación/metodo, parámetros, tiempoDeEjecicion> -->
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Logger específico para la auditoría de Web Services -->
+    <!-- El nombre "WebServiceAuditLogger" debe coincidir con el usado en LoggerFactory.getLogger() en el Aspecto -->
+    <logger name="WebServiceAuditLogger" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE" />
+    </logger>
+
+    <!-- Configuración del logger raíz (para el resto de la aplicación) -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" /> <!-- O cualquier otro appender que uses para logs generales -->
+    </root>
+
+</configuration>

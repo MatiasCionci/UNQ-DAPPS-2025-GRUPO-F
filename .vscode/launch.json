@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ExampleAilin",
+            "request": "launch",
+            "mainClass": "com.dappstp.dappstp.ExampleAilin",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

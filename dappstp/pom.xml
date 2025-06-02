@@ -54,6 +54,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
+		  <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+        <!-- La versión es gestionada por Spring Boot Bill of Materials (BOM) -->
+    </dependency>
 		<dependency>
     		<groupId>com.h2database</groupId>
     		<artifactId>h2</artifactId>
@@ -220,6 +225,7 @@
 				<!-- La configuración de annotationProcessorPaths para Lombok suele heredarla bien -->
 				<!-- de spring-boot-starter-parent, pero dejarla explícita no hace daño -->
 				<configuration>
+				<parameters>true</parameters>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
