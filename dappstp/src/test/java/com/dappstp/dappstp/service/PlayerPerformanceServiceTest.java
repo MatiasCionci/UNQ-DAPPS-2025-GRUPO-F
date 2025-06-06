@@ -14,12 +14,12 @@ import org.mockito.MockitoAnnotations;
 import com.dappstp.dappstp.factory.PlayerPerformanceFactory;
 import com.dappstp.dappstp.model.PerformanceAnalysis;
 import com.dappstp.dappstp.service.impl.PlayerPerformanceServiceImpl;
-import com.dappstp.dappstp.service.scraping.ScrapperPlayerPerformace;
+import com.dappstp.dappstp.service.scraping.ScrapperPlayerPerformaceService;
 
 
 class PlayerPerformanceServiceTest {
     @Mock
-    private ScrapperPlayerPerformace scraper;
+    private ScrapperPlayerPerformaceService scraper;
 
     @InjectMocks
     private PlayerPerformanceServiceImpl service;

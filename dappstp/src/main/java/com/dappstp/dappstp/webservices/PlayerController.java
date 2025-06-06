@@ -10,11 +10,9 @@ import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInput
 
 // Importa ComprehensivePredictionInputService
 import lombok.extern.slf4j.Slf4j; // Para logging
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity; // Para una mejor respuesta HTTP
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,7 +38,7 @@ public class PlayerController {
     private final PlayersService playerService; // Inyecta el servicio
     private final ComprehensivePredictionInputService comprehensivePredictionInputService; // Inyecta el servicio
 
-    @Autowired
+    
     public PlayerController(PlayersService playerService, ComprehensivePredictionInputService comprehensivePredictionInputService) { // Modifica el constructor
         this.playerService = playerService;
         this.comprehensivePredictionInputService = comprehensivePredictionInputService;

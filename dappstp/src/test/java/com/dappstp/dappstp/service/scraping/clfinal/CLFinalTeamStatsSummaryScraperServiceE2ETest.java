@@ -2,7 +2,6 @@ package com.dappstp.dappstp.service.scraping.clfinal;
 
 import com.dappstp.dappstp.model.scraping.TeamStatsSummaryEntity;
 import com.dappstp.dappstp.repository.TeamStatsSummaryRepository;
-import com.dappstp.dappstp.service.scraping.clfinal.dto.StatDetailDto;
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

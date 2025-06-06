@@ -10,15 +10,15 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.dappstp.dappstp.model.PlayerPerformance;
 import com.dappstp.dappstp.service.WhoScoredScraper;
 
 import jakarta.annotation.PreDestroy;
 
-@Component
-public class ScrapperPlayerPerformace implements WhoScoredScraper {
+@Service
+public class ScrapperPlayerPerformaceService implements WhoScoredScraper {
     private WebDriver driver;
 
     private WebDriver getDriver() {

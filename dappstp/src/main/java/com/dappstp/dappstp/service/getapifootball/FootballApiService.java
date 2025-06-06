@@ -2,7 +2,6 @@ package com.dappstp.dappstp.service.getapifootball;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +23,7 @@ public class FootballApiService {
   
     private String apiUrl="https://api.football-data.org/v4";
 
-    @Autowired
+
     public FootballApiService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }

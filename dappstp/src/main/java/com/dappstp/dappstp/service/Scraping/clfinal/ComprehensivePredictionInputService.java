@@ -13,7 +13,6 @@ import com.dappstp.dappstp.service.predictionia.PredictionService; // Necesario 
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,7 +37,7 @@ public class ComprehensivePredictionInputService {
     private final PredictionLogRepository predictionLogRepository; // Para guardar logs
     private final ObjectMapper objectMapper; // Para serializar Prediction a JSON
 
-    @Autowired
+  
     public ComprehensivePredictionInputService(FootballApiService footballApiService,
                                              PlayersService playersService,
                                              CLFinalTeamStatsSummaryScraperService clFinalScraperService,

@@ -5,8 +5,7 @@ import java.util.List;
 import com.dappstp.dappstp.model.Team;
 import com.dappstp.dappstp.model.UpcomingMatch;
 import com.dappstp.dappstp.service.MatchService;
-import com.dappstp.dappstp.service.TeamService;
-import com.dappstp.dappstp.service.scraping.ScraperServiceMatches;
+import com.dappstp.dappstp.service.scraping.ScraperMatchesService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +21,12 @@ import java.net.URI;
 public class MatchController {
 
     private final MatchService matchService;
-    private final TeamService teamService;
-    private final ScraperServiceMatches scraper;
+    private final ScraperMatchesService scraper;
 
-    public MatchController(ScraperServiceMatches scraper,MatchService matchService, TeamService teamService) {
+    public MatchController(ScraperMatchesService scraper,MatchService matchService) {
         this.scraper      = scraper;
         this.matchService = matchService;
-        this.teamService = teamService;
+     
     }
 
     @PostMapping

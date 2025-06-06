@@ -11,13 +11,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.dappstp.dappstp.model.Team;
 import com.dappstp.dappstp.repository.TeamRepository;
 import com.dappstp.dappstp.service.impl.MatchServiceImpl;
-import com.dappstp.dappstp.service.scraping.ScraperServiceMatches;
+import com.dappstp.dappstp.service.scraping.ScraperMatchesService;
 
 @ExtendWith(MockitoExtension.class)
 public class UpcomingMatchServiceTest {
     
     @Mock
-    private ScraperServiceMatches scraper;
+    private ScraperMatchesService scraper;
 
     @Mock
     private TeamRepository teamRepo;

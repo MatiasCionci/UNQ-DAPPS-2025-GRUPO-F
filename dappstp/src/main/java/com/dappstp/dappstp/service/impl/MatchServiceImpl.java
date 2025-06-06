@@ -6,7 +6,7 @@ import com.dappstp.dappstp.model.Team;
 import com.dappstp.dappstp.model.UpcomingMatch;
 import com.dappstp.dappstp.repository.TeamRepository;
 import com.dappstp.dappstp.service.MatchService;
-import com.dappstp.dappstp.service.scraping.ScraperServiceMatches;
+import com.dappstp.dappstp.service.scraping.ScraperMatchesService;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class MatchServiceImpl implements MatchService {
     
-    private final ScraperServiceMatches scraper;
+    private final ScraperMatchesService scraper;
     private final TeamRepository teamRepo;
 
-    public MatchServiceImpl(ScraperServiceMatches scraper,
+    public MatchServiceImpl(ScraperMatchesService scraper,
                             TeamRepository teamRepo) {
         this.scraper  = scraper;
         this.teamRepo = teamRepo;

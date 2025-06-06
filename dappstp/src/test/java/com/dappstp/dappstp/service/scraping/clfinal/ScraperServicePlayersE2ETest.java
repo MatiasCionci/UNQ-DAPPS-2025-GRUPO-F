@@ -22,7 +22,7 @@ class ScraperServicePlayersE2ETest {
     private static final Logger logger = LoggerFactory.getLogger(ScraperServicePlayersE2ETest.class);
 
     @Autowired
-    private ScraperServicePlayers scraperServicePlayers;
+    private ScraperPlayersService scraperServicePlayers;
 
     @Autowired
     private PlayersRepository playersRepository;

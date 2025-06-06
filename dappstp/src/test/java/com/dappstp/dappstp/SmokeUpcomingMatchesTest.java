@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.dappstp.dappstp.service.MatchService;
 import com.dappstp.dappstp.service.TeamService;
-import com.dappstp.dappstp.service.scraping.ScraperServiceMatches;
+import com.dappstp.dappstp.service.scraping.ScraperMatchesService;
 import com.dappstp.dappstp.webservices.MatchController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,7 +20,7 @@ public class SmokeUpcomingMatchesTest {
     private MockMvc mvc;
 
     @Mock
-    private ScraperServiceMatches scraper;
+    private ScraperMatchesService scraper;
 
     @Mock
     private MatchService matchService;

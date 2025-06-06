@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.dappstp.dappstp.model.PlayerPerformance;
 import com.dappstp.dappstp.model.Players;
@@ -14,13 +14,13 @@ import com.dappstp.dappstp.service.WhoScoredScraper;
 
 import jakarta.persistence.EntityNotFoundException;
 
-@Component
+@Service
 @Primary
-public class DevWhoScoredScraper implements WhoScoredScraper {
+public class DevWhoScoredScraperService implements WhoScoredScraper {
 
     private final PlayersRepository playersRepository;
 
-    public DevWhoScoredScraper(PlayersRepository playersRepository) {
+    public DevWhoScoredScraperService(PlayersRepository playersRepository) {
         this.playersRepository = playersRepository;
     }
 

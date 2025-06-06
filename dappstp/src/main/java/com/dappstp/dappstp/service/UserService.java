@@ -11,7 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.dappstp.dappstp.model.User; 
-import com.dappstp.dappstp.model.RegisterRequest; 
+// Import RegisterRequest ya no es necesario para el método registerUser si pasas strings directamente
+// import com.dappstp.dappstp.model.RegisterRequest; 
 import org.springframework.http.HttpStatus;
 
 import com.dappstp.dappstp.repository.UserRepository;
@@ -30,17 +31,18 @@ public class UserService implements UserDetailsService {
                user.getName(), user.getPassword(), new ArrayList<>());
     }
 
-    public User saveNew(RegisterRequest request) {
-      System.out.println("Intentando registrar usuario: " + request.getUsername());
+    // Método modificado para aceptar username y password directamente
+    public User registerUser(String username, String password) {
+      System.out.println("Intentando registrar usuario: " + username);
   
-      if (repo.findByName(request.getUsername()).isPresent()) {
+      if (repo.findByName(username).isPresent()) {
           System.out.println("Usuario ya existe");
           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuario ya existe");
       }
   
       User user = new User();
-      user.setName(request.getUsername());
-      user.setPassword(encoder.encode(request.getPassword()));
+      user.setName(username);
+      user.setPassword(encoder.encode(password));
       
       User saved = repo.save(user);
       System.out.println("Usuario guardado con ID: " + saved.getId());

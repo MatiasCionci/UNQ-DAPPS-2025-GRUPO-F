@@ -6,8 +6,6 @@ import com.dappstp.dappstp.service.UserService;
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
 import com.dappstp.dappstp.service.getapifootball.MatchDto;
- // Asumiendo que tienes este DTO
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +44,6 @@ class FootballControllerTest {
 
     @MockBean
     private JwtToken jwtToken;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     private MatchesApiResponseDto mockMatchesResponse;
     private final String baseFootballUrl = ApiPaths.API_BASE + "/v1/football";

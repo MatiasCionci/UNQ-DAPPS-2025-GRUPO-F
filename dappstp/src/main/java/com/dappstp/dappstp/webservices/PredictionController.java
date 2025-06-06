@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat; // Para parsear fechas
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +35,7 @@ public class PredictionController {
     private final ComprehensivePredictionInputService comprehensivePredictionInputService; // Nuevo servicio
 
     // Inyección por constructor (recomendado)
-    @Autowired
+   
     public PredictionController(PredictionService predictionService,                              
                                 ComprehensivePredictionInputService comprehensivePredictionInputService) { // Inyectar nuevo servicio
         this.predictionService = predictionService;

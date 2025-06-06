@@ -3,7 +3,6 @@ package com.dappstp.dappstp.webservices;
 import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
 import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +23,6 @@ public class FootballController {
 
     private final FootballApiService footballApiService;
 
-    @Autowired
     public FootballController(FootballApiService footballApiService) {
         this.footballApiService = footballApiService;
     }

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.Players;
 import org.springframework.http.HttpStatus;
-import com.dappstp.dappstp.service.scraping.clfinal.ScraperServicePlayers;
+import com.dappstp.dappstp.service.scraping.clfinal.ScraperPlayersService;
 import com.dappstp.dappstp.service.scraping.clfinal.SimpleScorePredictionScraperService;
 import com.dappstp.dappstp.service.scraping.clfinal.TeamCharacteristicsScraperService;
 import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 @Tag(name = "Scraping", description = "Endpoints para realizar scraping de diversas fuentes de datos deportivos.")
 public class ScrapingController {
 
-    private final ScraperServicePlayers scraperService;
+    private final ScraperPlayersService scraperService;
     private final SimpleScorePredictionScraperService scorePredictionScraperService;
     // completo de prediccion,dice los sucesos del partido
     private final TeamCharacteristicsScraperService teamCharacteristicsScraperService;
@@ -38,7 +38,7 @@ public class ScrapingController {
 
     // Inyección de dependencias vía constructor para ambos servicios
    // @Autowired
-    public ScrapingController(ScraperServicePlayers scraperService,
+    public ScrapingController(ScraperPlayersService scraperService,
                               SimpleScorePredictionScraperService scorePredictionScraperService,
                               TeamCharacteristicsScraperService teamCharacteristicsScraperService
                             ) {

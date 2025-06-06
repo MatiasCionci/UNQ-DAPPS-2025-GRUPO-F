@@ -7,7 +7,6 @@ import com.dappstp.dappstp.security.JwtToken;
 import com.dappstp.dappstp.service.PlayersService;
 import com.dappstp.dappstp.service.UserService;
 import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,8 +23,6 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -43,8 +40,6 @@ public class PlayerControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper; // Useful for converting objects to JSON strings if needed
 
     @MockBean
     private PlayersService playerService; // Mock the direct dependency

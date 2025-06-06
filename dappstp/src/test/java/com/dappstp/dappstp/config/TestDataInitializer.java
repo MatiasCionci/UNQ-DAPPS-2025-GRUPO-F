@@ -1,13 +1,9 @@
 package com.dappstp.dappstp.config;
 
-
-
-import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.model.User;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.model.scraping.StatDetailEntity;
 import com.dappstp.dappstp.model.scraping.TeamStatsSummaryEntity;
-import com.dappstp.dappstp.repository.PlayersRepository; // Asegúrate de tener este repositorio
 import com.dappstp.dappstp.repository.PredictionLogRepository;
 import com.dappstp.dappstp.repository.TeamStatsSummaryRepository;
 import com.dappstp.dappstp.repository.UserRepository;
@@ -20,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Component
 @Profile("dev") // Solo se ejecutará si el perfil "dev" está activo
@@ -34,8 +29,7 @@ public class TestDataInitializer implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PlayersRepository playersRepository; // Necesitarás crear este repositorio
+
 
     @Autowired
     private PredictionLogRepository predictionLogRepository;

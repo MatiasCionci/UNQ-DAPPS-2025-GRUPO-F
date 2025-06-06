@@ -35,13 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class ScraperServiceMatches {
+public class ScraperMatchesService {
 
-    private static final Logger log = LoggerFactory.getLogger(ScraperServiceMatches.class);
+    private static final Logger log = LoggerFactory.getLogger(ScraperMatchesService.class);
     private final UpcomingMatchRepository repo;
     private final TeamRepository teamRepo;
 
-    public ScraperServiceMatches(UpcomingMatchRepository repo, TeamRepository teamRepo) {
+    public ScraperMatchesService(UpcomingMatchRepository repo, TeamRepository teamRepo) {
         this.repo = repo;
         this.teamRepo = teamRepo;
     }

@@ -2,7 +2,6 @@ package com.dappstp.dappstp.service;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service; // Importa @Service
 import com.dappstp.dappstp.model.queryhistory.PredictionLog; // Importar PredictionLog
 import com.dappstp.dappstp.repository.PredictionLogRepository; // Importar PredictionLogRepository
@@ -15,7 +14,7 @@ import java.util.List;
 public class PlayersService {
     private final PlayersRepository playerRepository;
     private final PredictionLogRepository predictionLogRepository; // Añadir el repositorio de logs
-    @Autowired
+
     public PlayersService(PlayersRepository playerRepository,
                           PredictionLogRepository predictionLogRepository) {
         // Inyecta el repositorio de jugadores y el repositorio de logs

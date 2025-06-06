@@ -18,11 +18,11 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class ScraperServicePlayers {
+public class ScraperPlayersService {
 
     private final PlayersRepository playerRepository;
 
-    public ScraperServicePlayers(PlayersRepository playerRepository) {
+    public ScraperPlayersService(PlayersRepository playerRepository) {
         this.playerRepository = playerRepository;
     }
 
