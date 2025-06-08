@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "GenerateSecretKey",
+            "request": "launch",
+            "mainClass": "com.dappstp.dappstp.security.GenerateSecretKey",
+            "projectName": "dappstp"
+        },
+        {
+            "type": "java",
             "name": "ExampleAilin",
             "request": "launch",
             "mainClass": "com.dappstp.dappstp.ExampleAilin",
