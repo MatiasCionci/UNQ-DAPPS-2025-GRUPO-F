@@ -12,7 +12,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +21,9 @@ import java.util.List;
 @Slf4j
 public class ScraperPlayersService {
 
+    // Constantes para el nombre del caché y la clave
+    public static final String PLAYERS_CACHE_NAME = "scrapedPlayersData";
+    public static final String ALL_PLAYERS_KEY = "'allPlayersFromDefaultUrl'"; // Clave estática ya que la URL es fija
     private final PlayersRepository playerRepository;
 
     public ScraperPlayersService(PlayersRepository playerRepository) {
@@ -28,8 +32,11 @@ public class ScraperPlayersService {
 
     @Transactional
     @EnableScrapingSession
+    @Cacheable(value = PLAYERS_CACHE_NAME, key = ALL_PLAYERS_KEY)
     public List<Players> scrapeAndSavePlayers() {
         log.info("🚀 Iniciando lógica de scraping para jugadores (WebDriver gestionado por AOP)...");
+        log.info("🚀 Cache miss para '{}' en '{}'. Iniciando scraping y guardado de jugadores...", ALL_PLAYERS_KEY, PLAYERS_CACHE_NAME);
+
         List<Players> players = new ArrayList<>();
         try {
             ScrapingContext context = ScrapingContextHolder.getContext();
@@ -153,5 +160,13 @@ public class ScraperPlayersService {
         } catch (Exception e) {
             return 0.0;
         }
+    }
+     /**
+     * Invalida (limpia) el caché de jugadores scrapeados.
+     * La próxima llamada a scrapeAndSavePlayers() forzará un nuevo scraping.
+     */
+    @CacheEvict(value = PLAYERS_CACHE_NAME, key = ALL_PLAYERS_KEY)
+    public void evictScrapedPlayersCache() {
+        log.info("🧹 Caché '{}' con clave '{}' invalidado manualmente.", PLAYERS_CACHE_NAME, ALL_PLAYERS_KEY);
     }
 }

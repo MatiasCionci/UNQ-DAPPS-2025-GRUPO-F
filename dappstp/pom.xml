@@ -68,6 +68,30 @@
 
 		<!-- Spring Data JPA (solo una vez es necesario) -->
 		<dependency>
+   			 <groupId>org.springframework.boot</groupId>
+    		 <artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		<dependency>
+   			 <groupId>org.springframework.boot</groupId>
+   			 <artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+<!-- Para serializar/deserializar tipos de Java Time API (LocalDate, etc.) -->
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jsr310</artifactId>
+</dependency>
+<!-- MUY IMPORTANTE para entidades JPA con Hibernate 5+ y Jakarta EE -->
+<!-- Si usas Hibernate 6, sería jackson-datatype-hibernate6 -->
+<!-- Si usas javax.persistence (Hibernate 5 con Java EE), sería jackson-datatype-hibernate5 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-hibernate5-jakarta</artifactId>
+</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
