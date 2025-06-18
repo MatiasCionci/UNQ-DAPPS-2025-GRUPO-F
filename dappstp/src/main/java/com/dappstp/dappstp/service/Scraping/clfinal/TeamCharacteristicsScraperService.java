@@ -2,6 +2,7 @@ package com.dappstp.dappstp.service.scraping.clfinal;
 import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.exception.ScrapingException;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -54,13 +55,13 @@ public class TeamCharacteristicsScraperService {
 
         } catch (NoSuchElementException e) {
             log.warn("No se pudo encontrar la tabla de características en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se encontró la tabla de características del equipo en la página para " + matchUrl, e);
+            throw new ScrapingException("No se encontró la tabla de características del equipo en la página para " + matchUrl, e);
         } catch (TimeoutException e) {
             log.warn("Timeout esperando la tabla de características en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se pudo cargar la tabla de características a tiempo para " + matchUrl, e);
+            throw new ScrapingException("No se pudo cargar la tabla de características a tiempo para " + matchUrl, e);
         } catch (Exception e) {
             log.error("Error general durante el scraping de características para {}: {}", matchUrl, e.getMessage(), e);
-            throw new RuntimeException("Error general al obtener las características del equipo para " + matchUrl, e);
+            throw new ScrapingException("Error general al obtener las características del equipo para " + matchUrl, e);
         }
     }
 

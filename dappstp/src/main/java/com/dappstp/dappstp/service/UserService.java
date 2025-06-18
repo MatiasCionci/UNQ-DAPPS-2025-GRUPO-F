@@ -3,7 +3,8 @@ package com.dappstp.dappstp.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.userdetails.UserDetailsService;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,8 @@ public class UserService implements UserDetailsService {
 
     @Autowired private UserRepository repo;
     @Autowired private PasswordEncoder encoder;
-
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    
     @Override
     public UserDetails loadUserByUsername(String name) throws UsernameNotFoundException {
       User user = repo.findByName(name)
@@ -33,10 +35,10 @@ public class UserService implements UserDetailsService {
 
     // Método modificado para aceptar username y password directamente
     public User registerUser(String username, String password) {
-      System.out.println("Intentando registrar usuario: " + username);
+      logger.info("Intentando registrar usuario: " + username);
   
       if (repo.findByName(username).isPresent()) {
-          System.out.println("Usuario ya existe");
+          logger.info("Usuario ya existe");
           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuario ya existe");
       }
   
@@ -45,7 +47,7 @@ public class UserService implements UserDetailsService {
       user.setPassword(encoder.encode(password));
       
       User saved = repo.save(user);
-      System.out.println("Usuario guardado con ID: " + saved.getId());
+      logger.info("Usuario guardado con ID: " + saved.getId());
       return saved;
   }
 }

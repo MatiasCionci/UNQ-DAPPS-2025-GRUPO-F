@@ -4,6 +4,7 @@ import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSess
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
 import com.dappstp.dappstp.model.Players;
+import com.dappstp.dappstp.exception.ScrapingException;
 import com.dappstp.dappstp.repository.PlayersRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +120,7 @@ public class ScraperPlayersService {
         } catch (Exception e) {
             log.error("Error durante el proceso de scraping de jugadores: {}", e.getMessage(), e);
             // La excepción será propagada y el @Around advice en WebDriverManagementAspect se encargará del driver.quit()
-            throw new RuntimeException("Fallo en el scraping de jugadores", e); // O manejarla como prefieras para no cortar el flujo si es parte de un proceso mayor
+            throw new ScrapingException("Fallo en el scraping de jugadores", e); // O manejarla como prefieras para no cortar el flujo si es parte de un proceso mayor
         }
         return players;
     }

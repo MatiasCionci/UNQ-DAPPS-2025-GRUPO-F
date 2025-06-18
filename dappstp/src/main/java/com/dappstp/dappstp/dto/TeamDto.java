@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.getapifootball;
+package com.dappstp.dappstp.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true) // Para ignorar campos que no mapeamos

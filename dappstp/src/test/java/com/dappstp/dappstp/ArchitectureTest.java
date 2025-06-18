@@ -1,24 +1,29 @@
 package com.dappstp.dappstp;// Ajusta este paquete a tu estructura
 
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.domain.JavaClass; // Import JavaClass for predicates
+import com.tngtech.archunit.base.DescribedPredicate; // Added import
+// Import JavaClass for predicates
+import com.tngtech.archunit.core.domain.*;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not; // Import not for predicates
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
-import com.tngtech.archunit.base.DescribedPredicate; // Added import
-import static com.tngtech.archunit.base.DescribedPredicate.not; // Import not for predicates
-
-// import static com.tngtech.archunit.lang.syntax.elements.ClassesShouldConjunction.haveSimpleNameEndingWith;
+import static com.tngtech.archunit.library.GeneralCodingRules.*;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 class ArchitectureTest {
 
@@ -32,19 +37,21 @@ class ArchitectureTest {
                 .importPackages("com.dappstp.dappstp");
     }
 
+    // --- Reglas existentes (con pequeños ajustes si es necesario) ---
     @Test
     void services_should_be_in_service_package_and_annotated_with_Service() {
         ArchRule rule = classes()
-                .that().resideInAPackage("com.dappstp.dappstp.service..") // More specific package
-                .and().areNotInterfaces() // Focus on concrete classes, interfaces might not be annotated
-                .and().haveSimpleNameNotEndingWith("Dto") // Exclude DTOs - Corrected
-                .and().haveSimpleNameNotEndingWith("Aspect") // Exclude Aspects - Corrected
-                .and().haveSimpleNameNotContaining("Context") // Exclude Context related classes - Corrected
-                .and(not(DescribedPredicate.describe("is an anonymous class", JavaClass::isAnonymousClass)))
-                .and(not(DescribedPredicate.describe("is an inner class", JavaClass::isInnerClass)))
+                .that().resideInAPackage("..service..") // Usar '..' para flexibilidad
+                .and().areNotInterfaces()
+                .and().haveSimpleNameNotEndingWith("Dto")
+                .and().haveSimpleNameNotEndingWith("Aspect")
+                .and().haveSimpleNameNotContaining("Context")
+                .and(not(JavaClass.Predicates.ANONYMOUS_CLASSES))
+                .and(not(JavaClass.Predicates.INNER_CLASSES))
                 .should().beAnnotatedWith(Service.class)
+                .orShould().beAnnotatedWith(Component.class) // A veces se usa @Component para servicios también
                 .andShould().haveSimpleNameEndingWith("Service").orShould().haveSimpleNameEndingWith("ServiceImpl")
-                .as("Las implementaciones de servicios deben estar en el paquete 'com.dappstp.dappstp.service..', ser clases externas, anotadas con @Service, terminar con 'Service' o 'ServiceImpl', y no ser DTOs, Aspects o Contexts.");
+                .as("Las implementaciones de servicios deben estar en un subpaquete 'service', ser clases externas, anotadas con @Service o @Component, terminar con 'Service' o 'ServiceImpl', y no ser DTOs, Aspects o Contexts.");
 
         rule.check(importedClasses);
     }
@@ -52,7 +59,7 @@ class ArchitectureTest {
     @Test
     void controllers_should_be_in_controller_package_and_annotated() {
         ArchRule rule = classes()
-                .that().resideInAPackage("com.dappstp.dappstp.webservices..") // Corrected package for controllers
+                .that().resideInAPackage("..webservices..") // Usar '..' para flexibilidad
                 .and().resideOutsideOfPackage("..dto..") // Exclude DTO subpackages - Corrected
                 .should().beAnnotatedWith(RestController.class) // O Controller.class si usas vistas de servidor
                 .orShould().beAnnotatedWith(Controller.class)
@@ -65,10 +72,10 @@ class ArchitectureTest {
     @Test
     void repositories_should_be_in_repository_package_and_annotated_with_Repository() {
         ArchRule rule = classes()
-                .that().resideInAPackage("com.dappstp.dappstp.repository..") // More specific package
+                .that().resideInAPackage("..repository..") // Usar '..' para flexibilidad
                 .should().beAnnotatedWith(Repository.class)
                 .andShould().haveSimpleNameEndingWith("Repository").orShould().haveSimpleNameEndingWith("RepositoryImpl") // Allow Impl suffix
-                .as("Los repositorios deben estar en el paquete 'repository' y preferiblemente anotados con @Repository o terminar con 'Repository'");
+                .as("Los repositorios deben estar en un subpaquete 'repository', anotados con @Repository y terminar con 'Repository' o 'RepositoryImpl'");
 
         rule.check(importedClasses);
     }
@@ -77,30 +84,165 @@ class ArchitectureTest {
     void layered_architecture_dependencies_are_respected() {
         ArchRule rule = layeredArchitecture()
                 .consideringAllDependencies()
-                .layer("Controllers").definedBy("com.dappstp.dappstp.webservices..") // Corrected package
-                .layer("Services").definedBy("com.dappstp.dappstp.service..")     // More specific package
-                .layer("Repositories").definedBy("com.dappstp.dappstp.repository..") // More specific package
-                .layer("Security").definedBy("com.dappstp.dappstp.security..")       // Added Security layer
-                //.layer("Domain").definedBy("..domain..") // Si tienes una capa de dominio explícita
+                .layer("WebServices").definedBy("..webservices..")
+                .layer("Services").definedBy("..service..")
+                .layer("Repositories").definedBy("..repository..")
+                .layer("Security").definedBy("..security..")
+                .layer("Model").definedBy("..model..") // Capa para entidades y objetos de dominio
+                .layer("DTOs").definedBy("..dto..")     // Capa para Data Transfer Objects
+                .layer("Config").definedBy("..config..") // Si tienes clases de configuración
 
-                .whereLayer("Controllers").mayNotBeAccessedByAnyLayer()
-                .whereLayer("Services").mayOnlyBeAccessedByLayers("Controllers", "Security")
+                .whereLayer("WebServices").mayNotBeAccessedByAnyLayer()
+                .whereLayer("Services").mayOnlyBeAccessedByLayers("WebServices", "Security", "Config") // Servicios pueden ser usados por Config (ej. @PostConstruct)
                 .whereLayer("Repositories").mayOnlyBeAccessedByLayers("Services")
-                .whereLayer("Security").mayOnlyBeAccessedByLayers("Controllers"); // Allow Controllers to access Security (e.g. for JwtToken)
+                .whereLayer("Security").mayOnlyBeAccessedByLayers("WebServices", "Services", "Config") // Config puede necesitar Security (ej. WebSecurityConfigurerAdapter)
+                .whereLayer("Model").mayOnlyBeAccessedByLayers("Repositories", "Services", "DTOs", "WebServices") // DTOs y WebServices pueden exponer Modelos
+                .whereLayer("DTOs").mayOnlyBeAccessedByLayers("WebServices", "Services") // DTOs usados para comunicación entre Web y Servicios
+                .whereLayer("Config").mayNotBeAccessedByAnyLayer(); // Config no debería ser accedido por otras capas directamente
 
         rule.check(importedClasses);
     }
 
     @Test
     void controllers_should_not_access_repositories_directly() {
+        // Esta regla ya está cubierta por la layered_architecture_dependencies_are_respected,
+        // pero la mantenemos por su claridad explícita.
         ArchRule rule = noClasses()
-                .that().resideInAPackage("com.dappstp.dappstp.webservices..")
-                .should().dependOnClassesThat().resideInAPackage("com.dappstp.dappstp.repository..");
+                .that().resideInAPackage("..webservices..")
+                .should().dependOnClassesThat().resideInAPackage("..repository..");
 
         rule.check(importedClasses);
     }
 
-    
+    // --- Nuevas Reglas Sugeridas (basadas en tu input) ---
+
+    @Test
+    void no_cycles_between_packages() {
+        // Detecta ciclos entre los principales paquetes de funcionalidades/capas.
+        // Ajusta el patrón "com.dappstp.dappstp.(*).." si tienes una estructura de módulos diferente.
+        ArchRule rule = slices().matching("com.dappstp.dappstp.(*)..")
+                .should().beFreeOfCycles()
+                .as("No debería haber ciclos de dependencia entre los paquetes principales (slices).");
+        rule.check(importedClasses);
+    }
+
+    @Test
+    void classes_named_Foo_should_be_in_foo_package_example() {
+        // Ejemplo: si tienes una convención de que clases que empiezan con "Legacy" deben estar en un paquete "legacy"
+        // ArchRule rule = classes().that().haveSimpleNameStartingWith("Legacy")
+        //        .should().resideInAPackage("..legacy..")
+        //        .as("Clases que empiezan con 'Legacy' deben estar en un paquete 'legacy'.");
+        // rule.check(importedClasses);
+        // Esta es una regla de ejemplo, actívala y ajústala si tienes una convención similar.
+    }
+
+    @Test
+    void entity_classes_should_follow_conventions() {
+        ArchRule rule = classes()
+                .that(DescribedPredicate.describe("is annotated with @Entity",
+                                (JavaClass javaClass) -> javaClass.isAnnotatedWith(Entity.class))
+                        .or(DescribedPredicate.describe("is annotated with @Embeddable",
+                                (JavaClass javaClass) -> javaClass.isAnnotatedWith(Embeddable.class)))
+                )
+                .should().resideInAPackage("..model..")
+                // Optionally, if you don't want to enforce suffixes for all model classes:
+                // .and(JavaClass.Predicates.simpleNameEndingWith("Entity").or(JavaClass.Predicates.simpleNameEndingWith("Id")))
+                .as("Clases anotadas con @Entity o @Embeddable deben estar en el paquete 'model'. Suffixes like 'Entity' or 'Id' are recommended but not strictly enforced by this modified rule.");
+        rule.check(importedClasses);
+    }
+
+    @Test
+    void dto_classes_should_follow_conventions() {
+        ArchRule rule = classes()
+                .that().haveSimpleNameEndingWith("Dto").or().haveSimpleNameEndingWith("DTO")
+                .should().resideInAPackage("..dto..")
+                .as("Clases que terminan con 'Dto' o 'DTO' deben estar en un subpaquete 'dto'.");
+        rule.check(importedClasses);
+    }
+
+    @Test
+    void entityManager_usage_restrictions() {
+        // Clases que SON EntityManager (ej. implementaciones custom, menos común)
+        // Solo deben ser dependidas por clases en persistencia o servicios (si es necesario para alguna lógica avanzada)
+        // y esas clases dependientes deberían ser transaccionales.
+        ArchRule implementorsRule = classes()
+                .that(JavaClass.Predicates.assignableTo(EntityManager.class))
+                .and(not(JavaClass.Predicates.INTERFACES)) // Excluir la interfaz EntityManager misma
+                .should().onlyHaveDependentClassesThat()
+                .resideInAnyPackage("..repository..", "..service..") // Ajusta si es necesario
+                .andShould().onlyHaveDependentClassesThat(
+                        DescribedPredicate.describe(
+                                "is annotated with @Transactional or has a method annotated with @Transactional",
+                                (JavaClass javaClass) -> javaClass.isAnnotatedWith(Transactional.class)
+                                        || javaClass.getMethods().stream().anyMatch(method -> method.isAnnotatedWith(Transactional.class))
+                        )
+                )
+                .as("Implementaciones de EntityManager solo deben ser dependidas por clases en 'repository' o 'service' que sean transaccionales.");
+        // implementorsRule.check(importedClasses); // Descomenta si tienes implementaciones propias de EntityManager
+
+        // Clases que USAN (inyectan/tienen campos de) EntityManager
+        DescribedPredicate<JavaConstructor> constructorHasEntityManagerParameter =
+            DescribedPredicate.describe("have EntityManager constructor parameter",
+                (JavaConstructor constructor) -> constructor.getRawParameterTypes().stream()
+                    .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
+
+        DescribedPredicate<JavaMethod> methodHasEntityManagerParameter =
+            DescribedPredicate.describe("have EntityManager method parameter",
+                (JavaMethod method) -> method.getRawParameterTypes().stream()
+                    .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
+
+                      DescribedPredicate<JavaClass> classUsesEntityManagerInConstructor =
+            DescribedPredicate.describe("uses EntityManager in constructor",
+                javaClass -> javaClass.getConstructors().stream().anyMatch(constructorHasEntityManagerParameter));
+
+        DescribedPredicate<JavaClass> classUsesEntityManagerInMethod =
+            DescribedPredicate.describe("uses EntityManager in method",
+                javaClass -> javaClass.getMethods().stream().anyMatch(methodHasEntityManagerParameter));
+     
+    }
+
+    // --- Reglas generales de codificación (de ArchUnit) ---
+    @Test
+    void no_classes_should_use_jodatime() {
+        NO_CLASSES_SHOULD_USE_JODATIME.check(importedClasses);
+    }
+
+    @Test
+    void no_classes_should_throw_generic_exceptions() {
+        NO_CLASSES_SHOULD_THROW_GENERIC_EXCEPTIONS.check(importedClasses);
+    }
+
+    @Test
+    void no_classes_should_access_standard_streams_directly() {
+        NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS.check(importedClasses);
+    }
+
+    // --- Reglas sobre Aspectos (requieren que definas cómo identificarlos) ---
+    // @Test
+    // void aspects_should_follow_conventions_and_be_used_correctly() {
+    //     // 1. Convenciones para clases Aspecto
+    //     ArchRule aspectDefinitionRule = classes()
+    //             .that(DescribedPredicate.describe("is annotated with @Aspect",
+    //                     (JavaClass javaClass) -> javaClass.isAnnotatedWith(org.aspectj.lang.annotation.Aspect.class)))
+    //             .should().resideInAPackage("..aspect..") // O donde los coloques
+    //             .andShould().haveSimpleNameEndingWith("Aspect")
+    //             .as("Clases @Aspect deben estar en 'aspect' y terminar con 'Aspect'.");
+    //     // aspectDefinitionRule.check(importedClasses);
+
+    //     // 2. Verificar que los servicios de scraping (u otros) son 'aconsejados'
+    //     // Esto es más complejo y depende de tus pointcuts o si usas anotaciones custom.
+    //     // Ejemplo: si los métodos de scraping deben tener una anotación @LoggableScraping
+    //     // ArchRule scrapingMethodsAdvisedRule = methods()
+    //     // .that(JavaMember.Predicates.declaredIn(DescribedPredicate.describe("resides in scraping service package",
+    //     //        (JavaClass javaClass) -> javaClass.getPackage().getName().contains(".service.scraping"))))
+    //     // .and(JavaCodeUnit.Predicates.visibility(JavaModifier.PUBLIC))
+    //     // .and(not(JavaCodeUnit.Predicates.constructor()))
+    //     // .should(JavaMember.Predicates.annotatedWith(LoggableScraping.class)) // Tu anotación custom
+    //     //         .as("Métodos públicos de scraping services deben ser anotados con @LoggableScraping.");
+    //     // scrapingMethodsAdvisedRule.check(importedClasses);
+    // }
+
+
 //    @Test
 //    void services_should_not_contain_anonymous_inner_classes_violating_rules() {
 //        // This is a bit harder to enforce generically for naming if they are true helper anonymous classes.

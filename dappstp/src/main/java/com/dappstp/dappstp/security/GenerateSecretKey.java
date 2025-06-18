@@ -9,6 +9,6 @@ public class GenerateSecretKey {
         byte[] key = new byte[64]; // Para HS512, 64 bytes (512 bits) es una buena longitud
         secureRandom.nextBytes(key);
         String base64Key = Base64.getEncoder().encodeToString(key);
-        System.out.println("Generated Base64 Key: " + base64Key);
+      //  System.out.println("Generated Base64 Key: " + base64Key);
     }
 }

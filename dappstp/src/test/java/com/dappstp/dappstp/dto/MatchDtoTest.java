@@ -1,7 +1,11 @@
-package com.dappstp.dappstp.service.getapifootball;
+package com.dappstp.dappstp.dto;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.dappstp.dappstp.dto.MatchDto;
+import com.dappstp.dappstp.dto.TeamDto;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class MatchDtoTest {

@@ -2,7 +2,8 @@ package com.dappstp.dappstp.webservices;
 
 import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
-import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
+
+import com.dappstp.dappstp.dto.MatchesApiResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

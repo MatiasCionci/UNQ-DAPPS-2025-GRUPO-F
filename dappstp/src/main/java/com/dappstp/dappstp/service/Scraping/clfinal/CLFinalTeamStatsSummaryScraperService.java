@@ -8,6 +8,7 @@ import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSess
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
 import com.dappstp.dappstp.service.scraping.clfinal.dto.StatDetailDto;
+import com.dappstp.dappstp.exception.ScrapingException;
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 
 import lombok.extern.slf4j.Slf4j;
@@ -99,13 +100,13 @@ public class CLFinalTeamStatsSummaryScraperService {
 
         } catch (NoSuchElementException e) {
             log.warn("No se pudo encontrar un elemento esperado en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se encontró un elemento HTML necesario para el scraping de estadísticas en " + matchUrl, e);
+            throw new ScrapingException("No se encontró un elemento HTML necesario para el scraping de estadísticas en " + matchUrl, e);
         } catch (TimeoutException e) {
             log.warn("Timeout esperando un elemento en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se pudo cargar un elemento a tiempo para el scraping de estadísticas en " + matchUrl, e);
+            throw new ScrapingException("No se pudo cargar un elemento a tiempo para el scraping de estadísticas en " + matchUrl, e);
         } catch (Exception e) {
             log.error("Error general durante el scraping de estadísticas para {}: {}", matchUrl, e.getMessage(), e);
-            throw new RuntimeException("Error general al obtener el resumen de estadísticas para " + matchUrl, e);
+            throw new ScrapingException("Error general al obtener el resumen de estadísticas para " + matchUrl, e);
         }
     }
 
@@ -169,4 +170,3 @@ public class CLFinalTeamStatsSummaryScraperService {
 }
     // Método ayudante para convertir la Entidad a DTO
   
-

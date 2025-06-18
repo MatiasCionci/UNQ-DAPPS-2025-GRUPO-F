@@ -4,10 +4,9 @@ package com.dappstp.dappstp.service.scraping.clfinal;
 import com.dappstp.dappstp.model.Prediction;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.model.Players;
-
+import com.dappstp.dappstp.dto.MatchesApiResponseDto;
 import com.dappstp.dappstp.service.PlayersService;
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
-import com.dappstp.dappstp.service.getapifootball.MatchesApiResponseDto;
 import com.dappstp.dappstp.repository.PredictionLogRepository;
 import com.dappstp.dappstp.service.predictionia.PredictionService; // Necesario para llamar a analyzeMatch
 import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;

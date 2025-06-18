@@ -1,6 +1,10 @@
-package com.dappstp.dappstp.service.getapifootball;
+package com.dappstp.dappstp.dto;
 
 import org.junit.jupiter.api.Test;
+
+import com.dappstp.dappstp.dto.MatchDto;
+import com.dappstp.dappstp.dto.MatchesApiResponseDto;
+
 import java.util.ArrayList;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;

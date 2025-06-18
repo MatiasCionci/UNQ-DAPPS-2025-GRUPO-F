@@ -1,5 +1,6 @@
 package com.dappstp.dappstp.service.predictionia;
 
+import com.dappstp.dappstp.exception.PredictionServiceException;
 import com.dappstp.dappstp.model.Prediction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,7 +51,7 @@ private static final String GEMINI_URL = "https://generativelanguage.googleapis.
             return parseGeminiResponse(response);
         } catch (Exception e) {
             logger.error("Error en el análisis: {}", e.getMessage());
-            throw new RuntimeException("Error procesando predicción: " + e.getMessage());
+            throw new PredictionServiceException("Error procesando predicción: " + e.getMessage(), e);
         }
     }
 
@@ -108,10 +109,10 @@ private static final String GEMINI_URL = "https://generativelanguage.googleapis.
             String errorMsg = String.format("Error HTTP %d: %s", 
                 e.getStatusCode().value(), e.getResponseBodyAsString());
             logger.error(errorMsg);
-            throw new RuntimeException("Error de comunicación con Gemini API");
+            throw new PredictionServiceException("Error de comunicación con Gemini API: " + errorMsg, e);
         } catch (Exception e) {
             logger.error("Error inesperado: {}", e.getMessage());
-            throw new RuntimeException("Error interno del servidor");
+            throw new PredictionServiceException("Error interno del servidor al contactar Gemini API", e);
         }
     }
 

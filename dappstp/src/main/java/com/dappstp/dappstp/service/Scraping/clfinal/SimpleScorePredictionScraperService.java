@@ -3,6 +3,7 @@ package com.dappstp.dappstp.service.scraping.clfinal;
 import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
 import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.exception.ScrapingException;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -50,16 +51,16 @@ public class SimpleScorePredictionScraperService {
 
         } catch (NoSuchElementException e) {
             log.warn("No se pudo encontrar el elemento de predicción en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se encontró la sección de predicción del resultado en la página para " + matchUrl, e);
+            throw new ScrapingException("No se encontró la sección de predicción del resultado en la página para " + matchUrl, e);
         } catch (NumberFormatException e) {
             log.warn("El marcador obtenido no es un número válido en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("Se encontró la sección de predicción, pero el formato del marcador no es válido para " + matchUrl, e);
+            throw new ScrapingException("Se encontró la sección de predicción, pero el formato del marcador no es válido para " + matchUrl, e);
         } catch (TimeoutException e) {
             log.warn("Timeout esperando la sección de predicción en {}: {}", matchUrl, e.getMessage());
-            throw new RuntimeException("No se pudo cargar la sección de predicción a tiempo para " + matchUrl, e);
+            throw new ScrapingException("No se pudo cargar la sección de predicción a tiempo para " + matchUrl, e);
         } catch (Exception e) {
             log.error("Error general durante el scraping de predicción para {}: {}", matchUrl, e.getMessage(), e);
-            throw new RuntimeException("Error general al obtener la predicción del resultado para " + matchUrl, e);
+            throw new ScrapingException("Error general al obtener la predicción del resultado para " + matchUrl, e);
         }
     }
 
