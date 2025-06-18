@@ -90,15 +90,17 @@ class ArchitectureTest {
                 .layer("Security").definedBy("..security..")
                 .layer("Model").definedBy("..model..") // Capa para entidades y objetos de dominio
                 .layer("DTOs").definedBy("..dto..")     // Capa para Data Transfer Objects
+                .layer("Aspects").definedBy("..aspect..", "..service.scraping.aspect..") // Capa para Aspectos (incluye ApiLoggingAspect y Scraping AOP infra)
                 .layer("Config").definedBy("..config..") // Si tienes clases de configuración
 
                 .whereLayer("WebServices").mayNotBeAccessedByAnyLayer()
-                .whereLayer("Services").mayOnlyBeAccessedByLayers("WebServices", "Security", "Config") // Servicios pueden ser usados por Config (ej. @PostConstruct)
-                .whereLayer("Repositories").mayOnlyBeAccessedByLayers("Services")
-                .whereLayer("Security").mayOnlyBeAccessedByLayers("WebServices", "Services", "Config") // Config puede necesitar Security (ej. WebSecurityConfigurerAdapter)
-                .whereLayer("Model").mayOnlyBeAccessedByLayers("Repositories", "Services", "DTOs", "WebServices") // DTOs y WebServices pueden exponer Modelos
-                .whereLayer("DTOs").mayOnlyBeAccessedByLayers("WebServices", "Services") // DTOs usados para comunicación entre Web y Servicios
-                .whereLayer("Config").mayNotBeAccessedByAnyLayer(); // Config no debería ser accedido por otras capas directamente
+                .whereLayer("Services").mayOnlyBeAccessedByLayers("WebServices", "Security", "Config")
+                .whereLayer("Repositories").mayOnlyBeAccessedByLayers("Services", "Aspects") // Permitir que Aspectos accedan a Repositorios
+                .whereLayer("Security").mayOnlyBeAccessedByLayers("WebServices", "Services", "Config")
+                .whereLayer("Model").mayOnlyBeAccessedByLayers("Repositories", "Services", "DTOs", "WebServices", "Aspects") // Permitir que Aspectos accedan a Modelos
+                .whereLayer("DTOs").mayOnlyBeAccessedByLayers("WebServices", "Services")
+                .whereLayer("Aspects").mayOnlyBeAccessedByLayers("Services", "WebServices", "Config") // Permitir que Services, WebServices y Config accedan a Aspectos (para anotaciones, configuración, etc.)
+                .whereLayer("Config").mayNotBeAccessedByAnyLayer();
 
         rule.check(importedClasses);
     }
@@ -181,24 +183,33 @@ class ArchitectureTest {
         // implementorsRule.check(importedClasses); // Descomenta si tienes implementaciones propias de EntityManager
 
         // Clases que USAN (inyectan/tienen campos de) EntityManager
-        DescribedPredicate<JavaConstructor> constructorHasEntityManagerParameter =
-            DescribedPredicate.describe("have EntityManager constructor parameter",
-                (JavaConstructor constructor) -> constructor.getRawParameterTypes().stream()
-                    .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
+        // DescribedPredicate<JavaConstructor> constructorHasEntityManagerParameter =
+        //     DescribedPredicate.describe("have EntityManager constructor parameter",
+        //         (JavaConstructor constructor) -> constructor.getRawParameterTypes().stream()
+        //             .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
 
-        DescribedPredicate<JavaMethod> methodHasEntityManagerParameter =
-            DescribedPredicate.describe("have EntityManager method parameter",
-                (JavaMethod method) -> method.getRawParameterTypes().stream()
-                    .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
+        // DescribedPredicate<JavaMethod> methodHasEntityManagerParameter =
+        //     DescribedPredicate.describe("have EntityManager method parameter",
+        //         (JavaMethod method) -> method.getRawParameterTypes().stream()
+        //             .anyMatch(paramType -> paramType.isEquivalentTo(EntityManager.class)));
 
-                      DescribedPredicate<JavaClass> classUsesEntityManagerInConstructor =
-            DescribedPredicate.describe("uses EntityManager in constructor",
-                javaClass -> javaClass.getConstructors().stream().anyMatch(constructorHasEntityManagerParameter));
+        // DescribedPredicate<JavaClass> classUsesEntityManagerInConstructor =
+        //     DescribedPredicate.describe("uses EntityManager in constructor",
+        //         (JavaClass javaClass) -> javaClass.getConstructors().stream().anyMatch(constructorHasEntityManagerParameter));
 
-        DescribedPredicate<JavaClass> classUsesEntityManagerInMethod =
-            DescribedPredicate.describe("uses EntityManager in method",
-                javaClass -> javaClass.getMethods().stream().anyMatch(methodHasEntityManagerParameter));
-     
+        // DescribedPredicate<JavaClass> classUsesEntityManagerInMethod =
+        //     DescribedPredicate.describe("uses EntityManager in method",
+        //         (JavaClass javaClass) -> javaClass.getMethods().stream().anyMatch(methodHasEntityManagerParameter));
+        
+        // ArchRule usersRule = classes()
+        //          .that(classUsesEntityManagerInConstructor
+        //         .or(classUsesEntityManagerInMethod))
+        //         .should().resideInAPackage("..repository..") // Principalmente repositorios
+        //         .andShould(DescribedPredicate.describe("ser anotadas con @Transactional o tener métodos transaccionales", (JavaClass clazz) ->
+        //                 clazz.isAnnotatedWith(Transactional.class) ||
+        //                 clazz.getMethods().stream().anyMatch(method -> method.isAnnotatedWith(Transactional.class))))
+        //         .as("Clases que usan EntityManager directamente (campos, constructores, métodos) deben residir en 'repository' y ser transaccionales.");
+        // usersRule.check(importedClasses);
     }
 
     // --- Reglas generales de codificación (de ArchUnit) ---
