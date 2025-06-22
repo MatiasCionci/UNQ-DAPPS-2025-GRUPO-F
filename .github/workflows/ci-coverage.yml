@@ -33,6 +33,8 @@ jobs:
         # generará el informe de cobertura.
         env:
           RUN_E2E_FOOTBALL_API_TESTS: true # Aquí configuras la variable de entorno
+          FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }} # Inyecta el secreto como variable de entorno
+          FOOTBALL_API_URL: ${{ secrets.FOOTBALL_API_URL }} # Inyecta el secreto como variable de entorno
         working-directory: ./dappstp
         # Activate the 'coverage' profile to ensure JaCoCo runs
         run: mvn -B verify -Pcoverage --file pom.xml
