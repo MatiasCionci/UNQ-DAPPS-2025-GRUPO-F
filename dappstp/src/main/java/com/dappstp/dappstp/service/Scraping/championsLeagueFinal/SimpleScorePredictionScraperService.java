@@ -1,9 +1,10 @@
-package com.dappstp.dappstp.service.scraping.clfinal;
+package com.dappstp.dappstp.service.scraping.championsLeagueFinal;
 
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
 import com.dappstp.dappstp.exception.ScrapingException;
+import com.dappstp.dappstp.util.ScrapingUtils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -11,7 +12,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 @Slf4j
@@ -29,7 +29,7 @@ public class SimpleScorePredictionScraperService {
             driver.get(matchUrl);
             log.info("Página cargada: {}", matchUrl);
 
-            closePopupIfPresent(wait); // Usar el método genérico para cerrar popups
+            ScrapingUtils.closePopupIfPresent(wait); // Usar el método genérico para cerrar popups
 
             WebElement predictionDiv = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("preview-prediction")));
 
@@ -61,39 +61,6 @@ public class SimpleScorePredictionScraperService {
         } catch (Exception e) {
             log.error("Error general durante el scraping de predicción para {}: {}", matchUrl, e.getMessage(), e);
             throw new ScrapingException("Error general al obtener la predicción del resultado para " + matchUrl, e);
-        }
-    }
-
-    private void closePopupIfPresent(WebDriverWait wait) {
-        try {
-            WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("div.webpush-swal2-shown, div#qc-cmp2-container")
-            ));
-            // Intenta con el botón de cerrar de webpush
-            try {
-                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
-                closeBtn.click();
-                wait.until(ExpectedConditions.invisibilityOf(modal));
-                log.debug("🎉 Popup de webpush cerrado.");
-                return;
-            } catch (NoSuchElementException | TimeoutException e) {
-                log.debug("No se encontró el botón de cerrar de webpush, intentando con cookie consent.");
-            }
-            // Intenta con el botón de aceptar de cookie consent
-            try {
-                List<WebElement> consentButtons = modal.findElements(By.cssSelector("button[mode='primary'], button.qc-cmp2-button[mode='primary']"));
-                if (!consentButtons.isEmpty()) {
-                    consentButtons.get(0).click(); 
-                    wait.until(ExpectedConditions.invisibilityOf(modal));
-                    log.debug("🎉 Popup de cookie consent cerrado.");
-                } else {
-                     log.debug("No se encontró botón de aceptación de cookies conocido.");
-                }
-            } catch (NoSuchElementException | TimeoutException e) {
-                log.debug("No se pudo cerrar el popup de cookie consent: {}", e.getMessage());
-            }
-        } catch (TimeoutException | NoSuchElementException e) {
-            log.debug("No apareció ningún popup conocido o no se pudo cerrar.");
         }
     }
 }

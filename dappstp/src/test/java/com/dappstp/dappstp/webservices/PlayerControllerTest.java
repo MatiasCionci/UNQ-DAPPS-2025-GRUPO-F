@@ -6,7 +6,8 @@ import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.security.JwtToken;
 import com.dappstp.dappstp.service.PlayersService;
 import com.dappstp.dappstp.service.UserService;
-import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ComprehensivePredictionInputService;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

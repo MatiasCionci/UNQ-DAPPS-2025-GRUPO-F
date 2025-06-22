@@ -4,8 +4,9 @@ import com.dappstp.dappstp.config.ApiPaths;
 import com.dappstp.dappstp.security.JwtToken;
 import com.dappstp.dappstp.service.UserService;
 import com.dappstp.dappstp.service.getapifootball.FootballApiService;
-import com.dappstp.dappstp.dto.MatchesApiResponseDto;
-import com.dappstp.dappstp.dto.MatchDto;
+import com.dappstp.dappstp.dto.footballData.MatchDto;
+import com.dappstp.dappstp.dto.footballData.MatchesApiResponseDto;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

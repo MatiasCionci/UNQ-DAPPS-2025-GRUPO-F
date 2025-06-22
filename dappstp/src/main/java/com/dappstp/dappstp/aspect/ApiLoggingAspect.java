@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class ApiLoggingAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(ApiLoggingAspect.class);
+    private static final Logger logger = LoggerFactory.getLogger("WebServiceAuditLogger");
     private final ApiLogRepository apiLogRepository;
     private final ObjectMapper objectMapper; // Para serializar objetos a JSON
 

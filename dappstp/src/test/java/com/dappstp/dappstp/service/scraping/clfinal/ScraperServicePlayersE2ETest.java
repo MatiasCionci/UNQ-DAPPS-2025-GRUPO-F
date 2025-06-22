@@ -2,6 +2,8 @@ package com.dappstp.dappstp.service.scraping.clfinal;
 
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.repository.PlayersRepository;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ScraperPlayersService;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;

@@ -1,5 +1,6 @@
 package com.dappstp.dappstp.webservices.dto;
 
+import com.dappstp.dappstp.dto.webService.PredictionResponse;
 import com.dappstp.dappstp.model.Prediction; // Asegúrate de importar tu clase Prediction
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,8 +1,8 @@
 
-package com.dappstp.dappstp.service.scraping.clfinal;
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+package com.dappstp.dappstp.service.scraping.championsLeagueFinal;
+import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.exception.ScrapingException;
 import com.dappstp.dappstp.repository.PlayersRepository;

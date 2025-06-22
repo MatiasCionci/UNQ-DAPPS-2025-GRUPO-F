@@ -1,6 +1,10 @@
 package com.dappstp.dappstp.service.scraping.clfinal.dto;
 
 import org.junit.jupiter.api.Test;
+
+import com.dappstp.dappstp.dto.championsLeague.StatDetailDto;
+import com.dappstp.dappstp.dto.championsLeague.TeamStatsSummaryDto;
+
 import java.util.Collections;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;

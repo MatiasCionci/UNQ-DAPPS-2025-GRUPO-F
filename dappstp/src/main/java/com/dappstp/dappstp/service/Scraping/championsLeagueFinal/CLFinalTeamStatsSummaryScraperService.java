@@ -1,15 +1,15 @@
-package com.dappstp.dappstp.service.scraping.clfinal;
+package com.dappstp.dappstp.service.scraping.championsLeagueFinal;
 
 
 import com.dappstp.dappstp.model.scraping.TeamStatsSummaryEntity;
 import com.dappstp.dappstp.model.scraping.StatDetailEntity;
 import com.dappstp.dappstp.repository.TeamStatsSummaryRepository;
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
-import com.dappstp.dappstp.service.scraping.clfinal.dto.StatDetailDto;
+import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
+import com.dappstp.dappstp.dto.championsLeague.StatDetailDto;
+import com.dappstp.dappstp.dto.championsLeague.TeamStatsSummaryDto;
 import com.dappstp.dappstp.exception.ScrapingException;
-import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;

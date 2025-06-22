@@ -3,8 +3,8 @@ package com.dappstp.dappstp.dto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.dappstp.dappstp.dto.MatchDto;
-import com.dappstp.dappstp.dto.TeamDto;
+import com.dappstp.dappstp.dto.footballData.MatchDto;
+import com.dappstp.dappstp.dto.footballData.TeamDto;
 
 import static org.junit.jupiter.api.Assertions.*;
 

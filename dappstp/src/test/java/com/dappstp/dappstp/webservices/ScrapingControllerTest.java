@@ -4,9 +4,10 @@ import com.dappstp.dappstp.config.ApiPaths;
 import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.security.JwtToken;
 import com.dappstp.dappstp.service.UserService;
-import com.dappstp.dappstp.service.scraping.clfinal.ScraperPlayersService;
-import com.dappstp.dappstp.service.scraping.clfinal.SimpleScorePredictionScraperService;
-import com.dappstp.dappstp.service.scraping.clfinal.TeamCharacteristicsScraperService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ScraperPlayersService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.SimpleScorePredictionScraperService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.TeamCharacteristicsScraperService;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

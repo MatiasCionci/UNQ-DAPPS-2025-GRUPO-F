@@ -1,5 +1,6 @@
 package com.dappstp.dappstp.service.scraping.aspect;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.aspect.scraping.WebDriverManagementAspect;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;

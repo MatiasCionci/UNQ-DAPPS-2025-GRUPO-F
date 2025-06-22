@@ -2,11 +2,7 @@ package com.dappstp.dappstp.webservices;
 import com.dappstp.dappstp.model.Prediction;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.service.predictionia.PredictionService;
-import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
-import com.dappstp.dappstp.webservices.dto.ErrorResponse;
-import com.dappstp.dappstp.webservices.dto.PredictionRequest;
-import com.dappstp.dappstp.webservices.dto.PredictionResponse;
-
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ComprehensivePredictionInputService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat; // Para parsear fechas
 import org.springframework.web.bind.annotation.*;
 import com.dappstp.dappstp.config.ApiPaths; // Importar la clase ApiPaths
+import com.dappstp.dappstp.dto.webService.ErrorResponse;
+import com.dappstp.dappstp.dto.webService.PredictionRequest;
+import com.dappstp.dappstp.dto.webService.PredictionResponse;
+
 import java.time.LocalDate; // Para el nuevo endpoint
 import java.time.LocalDateTime;
 import java.util.List; // Para el nuevo endpoint

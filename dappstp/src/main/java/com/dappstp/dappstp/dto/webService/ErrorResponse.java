@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.webservices.dto;
+package com.dappstp.dappstp.dto.webService;
 
 public class ErrorResponse {
     private final String error;

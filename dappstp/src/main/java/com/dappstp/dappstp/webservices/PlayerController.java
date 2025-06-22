@@ -6,7 +6,7 @@ import com.dappstp.dappstp.model.Players;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
 import com.dappstp.dappstp.service.PlayersService; // Ensure PlayersService is imported
-import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ComprehensivePredictionInputService;
 
 // Importa ComprehensivePredictionInputService
 import lombok.extern.slf4j.Slf4j; // Para logging

@@ -1,7 +1,7 @@
 package com.dappstp.dappstp.service.scraping.aspect;
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
 import lombok.Getter;
 import lombok.Setter;
 import org.openqa.selenium.WebDriver;

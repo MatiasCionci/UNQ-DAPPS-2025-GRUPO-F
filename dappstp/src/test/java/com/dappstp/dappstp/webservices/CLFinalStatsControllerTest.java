@@ -5,9 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import com.dappstp.dappstp.security.JwtToken; // Importa tu clase JwtToken
-import com.dappstp.dappstp.service.scraping.clfinal.CLFinalTeamStatsSummaryScraperService;
-import com.dappstp.dappstp.service.scraping.clfinal.dto.TeamStatsSummaryDto;
 import com.dappstp.dappstp.config.ApiPaths;
+import com.dappstp.dappstp.dto.championsLeague.TeamStatsSummaryDto;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +15,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import com.dappstp.dappstp.service.UserService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.CLFinalTeamStatsSummaryScraperService;
+
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(

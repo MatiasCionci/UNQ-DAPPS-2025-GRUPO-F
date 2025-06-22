@@ -7,8 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import com.dappstp.dappstp.dto.MatchDto;
-import com.dappstp.dappstp.dto.MatchesApiResponseDto;
+
+import com.dappstp.dappstp.dto.footballData.MatchDto;
+import com.dappstp.dappstp.dto.footballData.MatchesApiResponseDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

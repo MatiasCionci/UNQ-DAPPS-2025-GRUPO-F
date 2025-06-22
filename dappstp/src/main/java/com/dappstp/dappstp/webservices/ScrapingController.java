@@ -5,12 +5,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.dappstp.dappstp.model.Players;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ScraperPlayersService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.SimpleScorePredictionScraperService;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.TeamCharacteristicsScraperService;
+
 import org.springframework.http.HttpStatus;
-import com.dappstp.dappstp.service.scraping.clfinal.ScraperPlayersService;
-import com.dappstp.dappstp.service.scraping.clfinal.SimpleScorePredictionScraperService;
-import com.dappstp.dappstp.service.scraping.clfinal.TeamCharacteristicsScraperService;
+
 import com.dappstp.dappstp.config.ApiPaths; // Asumiendo que tienes ApiPaths
-import com.dappstp.dappstp.webservices.dto.ErrorResponse; // Para respuestas de error
+import com.dappstp.dappstp.dto.webService.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

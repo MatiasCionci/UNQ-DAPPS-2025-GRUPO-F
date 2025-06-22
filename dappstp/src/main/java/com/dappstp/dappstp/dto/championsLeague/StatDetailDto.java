@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.service.scraping.clfinal.dto;
+package com.dappstp.dappstp.dto.championsLeague;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

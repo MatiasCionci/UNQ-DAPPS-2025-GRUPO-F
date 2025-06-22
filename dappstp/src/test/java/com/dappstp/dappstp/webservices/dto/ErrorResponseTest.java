@@ -1,6 +1,9 @@
 package com.dappstp.dappstp.webservices.dto;
 
 import org.junit.jupiter.api.Test;
+
+import com.dappstp.dappstp.dto.webService.ErrorResponse;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorResponseTest {

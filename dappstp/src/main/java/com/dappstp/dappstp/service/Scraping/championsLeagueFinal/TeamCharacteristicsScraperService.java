@@ -1,8 +1,9 @@
-package com.dappstp.dappstp.service.scraping.clfinal;
-import com.dappstp.dappstp.service.scraping.aspect.annotation.EnableScrapingSession;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContext;
-import com.dappstp.dappstp.service.scraping.aspect.context.ScrapingContextHolder;
+package com.dappstp.dappstp.service.scraping.championsLeagueFinal;
+import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
+import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
 import com.dappstp.dappstp.exception.ScrapingException;
+import com.dappstp.dappstp.util.ScrapingUtils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -30,7 +31,7 @@ public class TeamCharacteristicsScraperService {
             driver.get(matchUrl);
             log.info("Página cargada: {}", matchUrl);
 
-            closePopupIfPresent(wait); // Reutilizamos el método para cerrar popups
+            ScrapingUtils.closePopupIfPresent(wait); // Reutilizamos el método para cerrar popups
 
             // Esperar a que la tabla de características sea visible
             WebElement characteristicsTable = wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -63,24 +64,5 @@ public class TeamCharacteristicsScraperService {
             log.error("Error general durante el scraping de características para {}: {}", matchUrl, e.getMessage(), e);
             throw new ScrapingException("Error general al obtener las características del equipo para " + matchUrl, e);
         }
-    }
-
-    // Este método es idéntico al de SimpleScorePredictionScraperService.
-    // Podrías considerar moverlo a una clase de utilidad si lo usas en muchos servicios de scraping.
-    private void closePopupIfPresent(WebDriverWait wait) {
-        try {
-            WebElement modal = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("div.webpush-swal2-shown, div#qc-cmp2-container")
-            ));
-            try { // Intenta con el botón de cerrar de webpush
-                WebElement closeBtn = modal.findElement(By.cssSelector("button.webpush-swal2-close"));
-                closeBtn.click(); wait.until(ExpectedConditions.invisibilityOf(modal)); log.debug("🎉 Popup de webpush cerrado."); return;
-            } catch (NoSuchElementException | TimeoutException e) { log.debug("No se encontró el botón de cerrar de webpush, intentando con cookie consent."); }
-            try { // Intenta con el botón de aceptar de cookie consent
-                List<WebElement> consentButtons = modal.findElements(By.cssSelector("button[mode='primary'], button.qc-cmp2-button[mode='primary']"));
-                if (!consentButtons.isEmpty()) { consentButtons.get(0).click(); wait.until(ExpectedConditions.invisibilityOf(modal)); log.debug("🎉 Popup de cookie consent cerrado."); }
-                else { log.debug("No se encontró botón de aceptación de cookies conocido."); }
-            } catch (NoSuchElementException | TimeoutException e) { log.debug("No se pudo cerrar el popup de cookie consent: {}", e.getMessage()); }
-        } catch (TimeoutException | NoSuchElementException e) { log.debug("No apareció ningún popup conocido o no se pudo cerrar."); }
     }
 }

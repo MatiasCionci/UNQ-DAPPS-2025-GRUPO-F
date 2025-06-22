@@ -1,13 +1,13 @@
 package com.dappstp.dappstp.webservices;
 
 import com.dappstp.dappstp.config.ApiPaths;
+import com.dappstp.dappstp.dto.webService.PredictionRequest;
 import com.dappstp.dappstp.model.Prediction;
 import com.dappstp.dappstp.model.queryhistory.PredictionLog;
 import com.dappstp.dappstp.security.JwtToken;
 import com.dappstp.dappstp.service.UserService;
 import com.dappstp.dappstp.service.predictionia.PredictionService;
-import com.dappstp.dappstp.service.scraping.clfinal.ComprehensivePredictionInputService;
-import com.dappstp.dappstp.webservices.dto.PredictionRequest;
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.ComprehensivePredictionInputService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

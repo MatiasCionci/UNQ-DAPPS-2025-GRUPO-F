@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional; // Aunque no hay DB, por consistencia
 
+import com.dappstp.dappstp.service.scraping.championsLeagueFinal.SimpleScorePredictionScraperService;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 

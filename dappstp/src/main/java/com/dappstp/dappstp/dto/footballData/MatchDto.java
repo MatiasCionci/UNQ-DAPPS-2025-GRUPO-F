@@ -1,4 +1,4 @@
-package com.dappstp.dappstp.dto;
+package com.dappstp.dappstp.dto.footballData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 

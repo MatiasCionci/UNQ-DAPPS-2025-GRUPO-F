@@ -12,7 +12,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.dappstp.dappstp.dto.MatchesApiResponseDto;
+import com.dappstp.dappstp.dto.footballData.MatchesApiResponseDto;
 
 
 @Service
