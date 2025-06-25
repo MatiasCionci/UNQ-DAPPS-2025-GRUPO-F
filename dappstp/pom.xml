@@ -32,10 +32,7 @@
 <properties>
        <java.version>21</java.version>
         <!-- Explicitar clase principal para Spring Boot repackage -->
-      <!--   <start-class>com.dappstp.dappstp.DappstpApplication</start-class>-->
   <sonar.organization>matiascionci</sonar.organization>
-  <!-- Asegúrate que el projectKey (por defecto groupId:artifactId) coincida con el de SonarCloud -->
-  <!-- <sonar.projectKey>com.dappstp:dappstp</sonar.projectKey> -->
   <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 </properties>
 	<dependencies>

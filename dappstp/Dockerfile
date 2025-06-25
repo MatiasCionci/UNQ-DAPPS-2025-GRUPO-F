@@ -29,9 +29,15 @@ RUN apt-get update \
     && rm -f /tmp/chrome.deb \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+    
+WORKDIR /app
+
+# Crear directorio de logs con permisos adecuados
+RUN mkdir -p logs && chmod 777 logs
 
 # Copiar el JAR generado por el builder
 COPY --from=builder /app/target/*.jar app.jar
+
 
 # Puerto expuesto y comando de inicio
 EXPOSE 8080

@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<configuration debug="true">
 
-    <!-- Appender para la consola (opcional, para ver logs generales) -->
+    <property name="LOGS_PATH" value="logs" />
+
+    <!-- =============================================================== -->
+    <!-- Appenders - Definidos globalmente para poder reutilizarlos       -->
+    <!-- =============================================================== -->
+
+    <!-- Appender para la consola -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
@@ -10,30 +16,42 @@
 
     <!-- Appender para el archivo de auditoría -->
     <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <!-- Nombre y ubicación del archivo de log de auditoría -->
-        <file>logs/audit.log</file>
+        <file>${LOGS_PATH}/auditoria.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- Rollover diario -->
-            <fileNamePattern>logs/audit.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- Mantener historial de 30 días -->
+            <fileNamePattern>${LOGS_PATH}/archived/auditoria.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <!-- El mensaje ya está formateado en el código Java, así que solo imprimimos el mensaje. -->
-            <!-- El formato del mensaje será: <timestamp,user,operación/metodo, parámetros, tiempoDeEjecicion> -->
             <pattern>%msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Logger específico para la auditoría de Web Services -->
-    <!-- El nombre "WebServiceAuditLogger" debe coincidir con el usado en LoggerFactory.getLogger() en el Aspecto -->
-    <logger name="WebServiceAuditLogger" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT_FILE" />
-    </logger>
+    <!-- =============================================================== -->
+    <!-- Perfiles de Spring                                              -->
+    <!-- =============================================================== -->
 
-    <!-- Configuración del logger raíz (para el resto de la aplicación) -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" /> <!-- O cualquier otro appender que uses para logs generales -->
-    </root>
+    <!-- Perfil para DESARROLLO: logs de auditoría a consola Y a archivo -->
+    <springProfile name="dev">
+        <logger name="AuditLogger" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="AUDIT_FILE"/>
+        </logger>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!-- Perfil para PRODUCCIÓN (o cualquier perfil que NO sea 'dev') -->
+    <springProfile name="!dev">
+        <!-- El logger de auditoría solo escribe en el archivo en producción -->
+        <logger name="AuditLogger" level="INFO" additivity="false">
+            <appender-ref ref="AUDIT_FILE" />
+        </logger>
+
+        <root level="WARN">
+            <!-- Opcional: para ver errores en la consola de producción -->
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
 
 </configuration>

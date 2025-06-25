@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class ApiLoggingAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger("WebServiceAuditLogger");
+    private static final Logger logger = LoggerFactory.getLogger("AuditLogger");
     private final ApiLogRepository apiLogRepository;
     private final ObjectMapper objectMapper; // Para serializar objetos a JSON
 
@@ -72,16 +72,7 @@ public class ApiLoggingAspect {
                 responseStatus = response.getStatus();
             }
 
-            String returnValueJson = "N/A";
-            if (result != null) {
-                try {
-                    returnValueJson = objectMapper.writeValueAsString(result);
-                } catch (Exception e) {
-                    logger.warn("Error al serializar valor de retorno para {}.{}: {}", className, methodName, e.getMessage());
-                    returnValueJson = "Error al serializar valor de retorno: " + e.getMessage();
-                }
-            }
-            apiLog.completeLog(returnValueJson, System.currentTimeMillis() - startTime, responseStatus);
+            apiLog.completeLog(serializeReturnValue(result, className, methodName), System.currentTimeMillis() - startTime, responseStatus);
             return result;
         } catch (Exception e) {
             logger.error("Excepción en {}.{}: {}", className, methodName, e.getMessage(), e);
@@ -94,6 +85,25 @@ public class ApiLoggingAspect {
         } finally {
             apiLogRepository.save(apiLog);
             logger.info("API call logged: {}#{} | Duration: {}ms | Status: {}", className, methodName, apiLog.getDurationMs(), apiLog.getResponseStatus());
+        }
+    }
+
+    /**
+     * Serializa el valor de retorno de un método a JSON.
+     * @param result El objeto a serializar.
+     * @param className El nombre de la clase del método.
+     * @param methodName El nombre del método.
+     * @return La representación JSON del objeto o un mensaje de error.
+     */
+    private String serializeReturnValue(Object result, String className, String methodName) {
+        if (result == null) {
+            return "N/A";
+        }
+        try {
+            return objectMapper.writeValueAsString(result);
+        } catch (Exception e) {
+            logger.warn("Error al serializar valor de retorno para {}.{}: {}", className, methodName, e.getMessage());
+            return "Error al serializar valor de retorno: " + e.getMessage();
         }
     }
 }

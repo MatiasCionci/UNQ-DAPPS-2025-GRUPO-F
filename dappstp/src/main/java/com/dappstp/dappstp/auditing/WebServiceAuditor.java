@@ -26,9 +26,10 @@ import java.util.Map;
 @Aspect
 @Component
 public class WebServiceAuditor {
+            
 
     // Define un logger específico para la auditoría. Su nombre debe coincidir con la configuración en logback-spring.xml.
-    private static final Logger auditLogger = LoggerFactory.getLogger("WebServiceAuditLogger");
+    private static final Logger auditLogger = LoggerFactory.getLogger("AuditLogger");
     private final ObjectMapper objectMapper = new ObjectMapper(); // Para serializar parámetros a JSON
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
     private final MeterRegistry meterRegistry;

@@ -2,6 +2,7 @@ package com.dappstp.dappstp.service.advancedmetrics;
 import com.dappstp.dappstp.dto.metricasAvanzadas.TeamDataDto;
 import com.dappstp.dappstp.exception.ScrapingException;
 import com.dappstp.dappstp.util.ScrapingUtils;
+import ch.qos.logback.classic.util.ContextInitializer;
 import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
 import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
 import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
@@ -10,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,10 +20,15 @@ import java.util.List;
 @Service
 @Slf4j
 public class TeamDataScraperService {
+  
+
+        private static final Logger logger = LoggerFactory.getLogger("AuditLogger");
+
 @EnableScrapingSession
     public TeamDataDto scrapeDataSummary(String teamUrl) {
         log.info("🚀 Iniciando scraping de resumen de estadísticas de equipo para: {}", teamUrl);
-
+        logger.info("🚀 Iniciando scraping de resumen de estadísticas de equipo para: {}", teamUrl) ;
+        
         try {
             ScrapingContext context = ScrapingContextHolder.getContext();
             WebDriver driver = context.getDriver();
