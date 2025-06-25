@@ -26,7 +26,7 @@ class FootballApiServiceE2ETest {
     @EnabledIfEnvironmentVariable(named = "RUN_E2E_FOOTBALL_API_TESTS", matches = "true")
     void getMatches_forRealMadrid_shouldReturnMatches() {
         // Arrange
-        String realMadridId = "86"; // ID del Real Madrid según el comentario en tu servicio
+        String realMadridId = "1769"; // ID del Real Madrid según el comentario en tu servicio
         logger.info("Iniciando test E2E para FootballApiService.getMatches con ID: {}", realMadridId);
 
         // Act
