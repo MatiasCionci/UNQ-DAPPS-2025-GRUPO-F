@@ -1,0 +1,19 @@
+# Configuración global
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Lista de trabajos de recolección de métricas (scrape jobs).
+scrape_configs:
+  # Job para monitorear la propia instancia de Prometheus.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Job para tu aplicación Spring Boot.
+  - job_name: 'dappstp-app'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      # 'dappstp-app' es el nombre del servicio definido en docker-compose.yml.
+      # Docker se encarga de resolver este nombre a la IP del contenedor.
+      - targets: ['dappstp-app:8080']

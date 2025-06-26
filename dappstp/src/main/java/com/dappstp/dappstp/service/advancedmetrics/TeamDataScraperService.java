@@ -2,7 +2,6 @@ package com.dappstp.dappstp.service.advancedmetrics;
 import com.dappstp.dappstp.dto.metricasAvanzadas.TeamDataDto;
 import com.dappstp.dappstp.exception.ScrapingException;
 import com.dappstp.dappstp.util.ScrapingUtils;
-import ch.qos.logback.classic.util.ContextInitializer;
 import com.dappstp.dappstp.aspect.scraping.annotation.EnableScrapingSession;
 import com.dappstp.dappstp.aspect.scraping.context.ScrapingContext;
 import com.dappstp.dappstp.aspect.scraping.context.ScrapingContextHolder;
